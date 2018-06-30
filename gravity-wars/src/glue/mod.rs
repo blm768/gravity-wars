@@ -34,11 +34,14 @@ pub struct GameControls {
 
 #[wasm_bindgen]
 pub fn init_game() -> AssetLoader {
-    let controls = get_element_by_id("game_controls");
-
     let assets = AssetLoader::new(start_game);
     assets.load("shaders/vertex.glsl");
 
+    assets
+}
+
+#[wasm_bindgen]
+pub fn start_game(assets: AssetData) {
     let state = GameState::new();
 
     let renderer = WebGlRenderer::new();
@@ -46,19 +49,17 @@ pub fn init_game() -> AssetLoader {
         log("Rendering error");
     }
 
-    assets
-}
-
-#[wasm_bindgen]
-pub fn start_game(assets: AssetData) {
-    let AssetData(data) = assets;
-    match data.get("shaders/vertex.glsl") {
-        Some(Ok(ref data)) => {
+    match assets.get("shaders/vertex.glsl") {
+        Ok(ref data) => {
             let text = str::from_utf8(data).unwrap_or("<UTF-8 decoding error>");
-            log(text);
+            let compiled = webgl::compile_shader(renderer.context(), webgl::VERTEX_SHADER, text);
+            match compiled {
+                Ok(_) => log("Shader compiled"),
+                Err(ref error) => log(error),
+            }
         }
-        _ => {
-            log("Missing asset");
+        err => {
+            log(&format!("Unable to load asset {}", "shaders/vertex.glsl"));
         }
     }
 }

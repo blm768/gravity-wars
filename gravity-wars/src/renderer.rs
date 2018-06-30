@@ -18,6 +18,10 @@ impl WebGlRenderer {
         let context = WebGLRenderingContext::new();
         WebGlRenderer { context }
     }
+
+    pub fn context(&self) -> &WebGLRenderingContext {
+        &self.context
+    }
 }
 
 impl GameRenderer for WebGlRenderer {

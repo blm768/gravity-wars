@@ -17,9 +17,15 @@ extern "C" {
 
 pub type AssetLoadCallback = Closure<FnMut(Response, Vec<u8>)>;
 
+#[derive(Clone, Debug)]
+pub enum AssetLoadError {
+    NotFound,
+    Other,
+}
+
 struct AssetLoaderData {
     pending: HashMap<Box<str>, AssetLoadCallback>,
-    resolved: HashMap<Box<str>, Result<Vec<u8>, ()>>,
+    resolved: HashMap<Box<str>, Result<Vec<u8>, AssetLoadError>>,
     on_complete: Box<Fn(AssetData)>,
 }
 
@@ -38,7 +44,8 @@ impl AssetLoaderData {
         if response_is_ok(&response) {
             self.resolved.insert(uri.into(), Ok(data));
         } else {
-            self.resolved.insert(uri.into(), Err(()));
+            // TODO: improve error values.
+            self.resolved.insert(uri.into(), Err(AssetLoadError::Other));
         }
 
         if self.pending.len() == 0 {
@@ -79,4 +86,17 @@ impl AssetLoader {
 }
 
 #[wasm_bindgen]
-pub struct AssetData(pub HashMap<Box<str>, Result<Vec<u8>, ()>>);
+pub struct AssetData(HashMap<Box<str>, Result<Vec<u8>, AssetLoadError>>);
+
+impl AssetData {
+    pub fn get(&self, name: &str) -> Result<&Vec<u8>, AssetLoadError> {
+        let AssetData(ref data) = self;
+        match data.get(name) {
+            Some(result) => match result {
+                Ok(ref data) => Ok(data),
+                Err(ref err) => Err(err.clone()),
+            },
+            None => Err(AssetLoadError::NotFound),
+        }
+    }
+}
