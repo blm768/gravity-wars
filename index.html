@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+</html>
+<head>
+  <meta charset="UTF-8">
+  <title>Gravity Wars</title>
+  <link rel="stylesheet" type="text/css" href="./main.css">
+  <script type="text/javascript" src="glue.js"></script>
+  <script type="text/javascript" src="wasm/gravity_wars.js"></script>
+  <script type="text/javascript">
+    const { init_game } = wasm_bindgen
+    wasm_bindgen('./wasm/gravity_wars_bg.wasm').then(() => init_game());
+  </script>
+</head>
+<body>
+<div id="game_container">
+  <div id="game_map"><canvas id="game_canvas"></canvas></div>
+  <div id="game_overlay"></div>
+  <form id="game_controls" action="javascript:void(0)">
+    <label for="angle">Angle <input id="angle" type="number" required="required" min="0" max="360" step="any"></label>
+    <label for="power">Power <input id="power" type="number" required="required" min="0" max="10" step="any"></label>
+    <input id="fire" type="submit" value="Fire!">
+    <label id="current_player"></label>
+  </div>
+</div>
+</body>
+</html>

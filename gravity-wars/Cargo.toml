@@ -1,0 +1,11 @@
+[package]
+name = "gravity-wars"
+version = "0.1.0"
+authors = ["Ben Merritt <blm768@gmail.com>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+#gltf = "0.11"
+wasm-bindgen = "0.2.0"

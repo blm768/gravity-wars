@@ -1,0 +1,129 @@
+body {
+    margin: 0;
+    padding: 0;
+
+    font-family: sans-serif;
+}
+
+#game_container {
+    display: grid;
+    grid-template-rows: auto max-content;
+    grid-template-columns: auto;
+    grid-template-areas:
+        "map"
+        "controls";
+
+    width: 100vw;
+    height: 100vh;
+}
+
+#game_map {
+    grid-area: map;
+
+    /* When combined with "position: absolute;" in the canvas,
+     * this makes canvas sizing work correctly. */
+    position: relative;
+}
+
+#game_canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#game_overlay {
+    position: absolute;
+    left: 1em;
+    top: 1em;
+
+    background-color: rgb(60, 255, 0);
+    border: 2px solid rgb(28, 121, 0);
+    border-radius: 0.5em;
+    font-size: 16pt;
+    padding: 0.5em;
+}
+
+#game_overlay:empty {
+    display: none;
+}
+
+#game_controls {
+    grid-area: controls;
+
+    display: flex;
+
+    padding-left: 1em;
+    padding-right: 1em;
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    align-items: center;
+
+    background-color: #555;
+    font-size: 16pt;
+}
+
+#game_controls > * {
+    margin-right: 0.5em;
+}
+
+#game_controls label {
+    padding-left: 0.5em;
+    border-radius: 3px;
+
+    color: white;
+    background-color: #777;
+}
+
+#game_controls label#current_player {
+    padding-right: 0.5em;
+}
+
+#game_controls label#current_player:before {
+    background-color: var(--player-color);
+    content: "";
+    display: inline-block;
+    margin-right: 0.5em;
+    width: 1em;
+    height: 1em;
+    border-radius: 0.5em;
+    vertical-align: middle;
+}
+
+#game_controls input {
+    padding: 0.2em;
+    height: 100%;
+}
+
+#game_controls input[type=number] {
+    border: 1px solid #333;
+    border-radius: 3px;
+    background-color: #eee;
+
+    text-align: right;
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-size: inherit;
+}
+
+#game_controls input[type=number]:focus {
+    border-color: rgb(0, 174, 255);
+}
+
+#game_controls input[type=number]:invalid {
+    border-color: rgb(255, 102, 0);
+}
+
+#game_controls input[type=number][disabled] {
+    background-color: #999;
+}
+
+#game_controls input[type=submit] {
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    border-radius: 3px;
+
+    border: 1px solid #333;
+    background-color: rgb(255, 102, 0);
+
+    font-family: "Courier New", "Liberation Mono", monospace;
+    font-size: inherit;
+}
