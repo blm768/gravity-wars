@@ -8,8 +8,11 @@
   <script type="text/javascript" src="glue.js"></script>
   <script type="text/javascript" src="wasm/gravity_wars.js"></script>
   <script type="text/javascript">
-    const { init_game } = wasm_bindgen
-    wasm_bindgen('./wasm/gravity_wars_bg.wasm').then(() => init_game());
+    var { WasmFetchResult, init_game } = wasm_bindgen
+    wasm_bindgen('./wasm/gravity_wars_bg.wasm').then(() => {
+      window.WasmFetchResult = WasmFetchResult;
+      init_game();
+    });
   </script>
 </head>
 <body>

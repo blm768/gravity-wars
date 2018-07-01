@@ -58,8 +58,9 @@ pub fn start_game(assets: AssetData) {
                 Err(ref error) => log(error),
             }
         }
-        err => {
+        Err(error) => {
             log(&format!("Unable to load asset {}", "shaders/vertex.glsl"));
+            log(&format!("{}", error));
         }
     }
 }
