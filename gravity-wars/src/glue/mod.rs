@@ -3,7 +3,8 @@ use wasm_bindgen::prelude::*;
 use std::str;
 
 use glue::asset::{AssetData, AssetLoader};
-use renderer::{GameRenderer, WebGlRenderer};
+use glue::webgl::WebGlRenderer;
+use rendering::renderer::GameRenderer;
 use state::GameState;
 
 pub mod asset;
@@ -41,7 +42,7 @@ pub fn init_game() -> AssetLoader {
 }
 
 #[wasm_bindgen]
-pub fn start_game(assets: AssetData) {
+pub fn start_game(assets: &AssetData) {
     let state = GameState::new();
 
     let renderer = WebGlRenderer::new();

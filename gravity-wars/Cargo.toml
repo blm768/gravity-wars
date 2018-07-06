@@ -7,5 +7,6 @@ authors = ["Ben Merritt <blm768@gmail.com>"]
 crate-type = ["cdylib"]
 
 [dependencies]
+cgmath = "0.16.1"
 #gltf = "0.11"
 wasm-bindgen = "0.2.0"

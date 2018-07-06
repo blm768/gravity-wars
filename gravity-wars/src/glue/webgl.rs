@@ -1,5 +1,12 @@
 use wasm_bindgen::prelude::*;
 
+use std::error::Error;
+
+use cgmath::Matrix4;
+
+use rendering::renderer::GameRenderer;
+use state::GameState;
+
 pub const DEPTH_BUFFER_BIT: i32 = 0x0100;
 pub const STENCIL_BUFFER_BIT: i32 = 0x0400;
 pub const COLOR_BUFFER_BIT: i32 = 0x4000;
@@ -55,5 +62,38 @@ pub fn compile_shader(
         Ok(shader)
     } else {
         Err(context.get_shader_info_log(&shader))
+    }
+}
+
+pub struct WebGlRenderer {
+    context: WebGLRenderingContext,
+    aspect_ratio: f32,
+}
+
+impl WebGlRenderer {
+    pub fn new() -> WebGlRenderer {
+        let context = WebGLRenderingContext::new();
+        WebGlRenderer {
+            context,
+            aspect_ratio: 1.0,
+        }
+    }
+
+    pub fn context(&self) -> &WebGLRenderingContext {
+        &self.context
+    }
+}
+
+impl GameRenderer for WebGlRenderer {
+    fn render(&self, state: &GameState) -> Result<(), Box<Error>> {
+        self.context.clear_color(0.0, 0.0, 0.0, 1.0);
+        self.context.clear(COLOR_BUFFER_BIT);
+
+        let projection: Matrix4<f32> = state.camera.projection(self.aspect_ratio).into();
+
+        // TODO: implement.
+        for entity in &state.map.entities {}
+
+        Ok(())
     }
 }

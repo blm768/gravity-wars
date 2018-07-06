@@ -102,11 +102,11 @@ impl WasmFetchResult {
 struct AssetLoaderData {
     pending: HashMap<Box<str>, FetchCallback>,
     resolved: HashMap<Box<str>, FetchResult>,
-    on_complete: Box<Fn(AssetData)>,
+    on_complete: Box<Fn(&AssetData)>,
 }
 
 impl AssetLoaderData {
-    fn new(callback: Box<Fn(AssetData)>) -> Rc<RefCell<AssetLoaderData>> {
+    fn new(callback: Box<Fn(&AssetData)>) -> Rc<RefCell<AssetLoaderData>> {
         Rc::new(RefCell::new(AssetLoaderData {
             pending: HashMap::new(),
             resolved: HashMap::new(),
@@ -119,13 +119,13 @@ impl AssetLoaderData {
 
         self.resolved.insert(uri.into(), result);
 
-        if self.pending.len() == 0 {
+        if self.pending.is_empty() {
             let data = AssetData(mem::replace(&mut self.resolved, HashMap::new()));
-            (self.on_complete)(data);
+            (self.on_complete)(&data);
         }
     }
 
-    fn load(loader: Rc<RefCell<AssetLoaderData>>, uri: &str) {
+    fn load(loader: &Rc<RefCell<AssetLoaderData>>, uri: &str) {
         let saved_uri: Box<str> = uri.into();
         let saved_loader = Rc::clone(&loader);
         let callback = Closure::new(move |result: WasmFetchResult| {
@@ -146,14 +146,14 @@ pub struct AssetLoader {
 }
 
 impl AssetLoader {
-    pub fn new<T: Fn(AssetData) + 'static>(callback: T) -> AssetLoader {
+    pub fn new<T: Fn(&AssetData) + 'static>(callback: T) -> AssetLoader {
         AssetLoader {
             data: AssetLoaderData::new(Box::new(callback)),
         }
     }
 
     pub fn load(&self, uri: &str) {
-        AssetLoaderData::load(Rc::clone(&self.data), uri);
+        AssetLoaderData::load(&self.data, uri);
     }
 }
 
