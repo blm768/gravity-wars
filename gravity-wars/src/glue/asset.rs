@@ -162,7 +162,7 @@ impl AssetLoader {
 pub struct AssetData(HashMap<Box<str>, FetchResult>);
 
 impl AssetData {
-    pub fn get(&self, name: &str) -> Result<&Vec<u8>, FetchError> {
+    pub fn get(&self, name: &str) -> Result<&[u8], FetchError> {
         let AssetData(ref data) = self;
         match data.get(name) {
             Some(result) => match result {
