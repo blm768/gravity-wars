@@ -5,15 +5,7 @@
   <meta charset="UTF-8">
   <title>Gravity Wars</title>
   <link rel="stylesheet" type="text/css" href="./main.css">
-  <script type="text/javascript" src="glue.js"></script>
-  <script type="text/javascript" src="wasm/gravity_wars.js"></script>
-  <script type="text/javascript">
-    var { WasmFetchResult, init_game } = wasm_bindgen
-    wasm_bindgen('./wasm/gravity_wars_bg.wasm').then(() => {
-      window.WasmFetchResult = WasmFetchResult;
-      init_game();
-    });
-  </script>
+  <script type="text/javascript" src="./bundle.js"></script>
 </head>
 <body>
 <div id="game_container">

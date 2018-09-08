@@ -1,1 +1,5 @@
-/wasm/
+/dist/
+/node_modules/
+/gravity_wars_bg.wasm
+/gravity_wars.d.ts
+/gravity_wars.js
