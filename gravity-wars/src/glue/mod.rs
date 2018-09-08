@@ -3,11 +3,10 @@ use wasm_bindgen::prelude::*;
 use std::str;
 
 use cgmath::Vector3;
+use web_sys::{WebGlRenderingContext, WebGlShader};
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
-use glue::webgl::{
-    Buffer, BufferBinding, ShaderType, VertexAttributeBinding, WebGLShader, WebGlRenderer,
-};
+use glue::webgl::{Buffer, BufferBinding, ShaderType, VertexAttributeBinding, WebGlRenderer};
 use rendering::renderer::GameRenderer;
 use rendering::shader::{MaterialShaderInfo, ShaderProgram};
 use state::GameState;
@@ -17,18 +16,16 @@ pub mod webgl;
 
 #[wasm_bindgen]
 extern "C" {
+    // TODO: just use web-sys?
     #[wasm_bindgen(js_namespace=console)]
     pub fn log(text: &str);
+}
 
-    #[wasm_bindgen(js_namespace=glue, js_name=getElementById)]
-    pub fn get_element_by_id(id: &str) -> Element;
-
-    #[wasm_bindgen(js_namespace = glue, js_name=isNull)]
-    pub fn is_null(element: &Element) -> Element;
-
-    pub type Element;
-    #[wasm_bindgen(method, js_name=toString)]
-    pub fn to_string(element: &Element) -> String;
+#[wasm_bindgen(module = "./glue")]
+extern "C" {
+    // TODO: handle this more elegantly.
+    #[wasm_bindgen]
+    pub fn getWebGlContext() -> WebGlRenderingContext;
 }
 
 #[wasm_bindgen]
@@ -44,11 +41,11 @@ fn compile_shader_from_asset(
     asset: Result<&[u8], FetchError>,
     renderer: &WebGlRenderer,
     shader_type: ShaderType,
-) -> Option<WebGLShader> {
+) -> Option<WebGlShader> {
     match asset {
         Ok(ref data) => {
             let text = str::from_utf8(data).unwrap_or("<UTF-8 decoding error>");
-            let compiled = WebGLShader::compile(renderer.context(), shader_type, text);
+            let compiled = webgl::compile_shader(renderer.context(), shader_type, text);
             match compiled {
                 Ok(shader) => Some(shader),
                 Err(ref error) => {
@@ -69,7 +66,9 @@ fn compile_shader_from_asset(
 pub fn start_game(assets: &AssetData) {
     let state = GameState::new();
 
-    let renderer = WebGlRenderer::new();
+    //let canvas =
+
+    let renderer = WebGlRenderer::new(getWebGlContext());
     if let Err(_error) = renderer.render(&state) {
         log("Rendering error");
     }
@@ -90,7 +89,7 @@ pub fn start_game(assets: &AssetData) {
     ).unwrap();
     let info = MaterialShaderInfo::from_program(&program).unwrap();
 
-    let vertices = vec![
+    let mut vertices = vec![
         Vector3::new(0.0, 0.0, 0.0),
         Vector3::new(1.0, 0.0, 0.0),
         Vector3::new(0.0, 1.0, 0.0),
@@ -98,15 +97,18 @@ pub fn start_game(assets: &AssetData) {
 
     log("Shaders compiled");
 
-    let buf = Buffer::new(renderer.context().clone(), BufferBinding::ArrayBuffer);
-    buf.set_data(&vertices);
+    match Buffer::new(renderer.context().clone(), BufferBinding::ArrayBuffer) {
+        Some(buf) => {
+            buf.set_data(&mut vertices);
 
-    log("Buffers created");
+            log("Buffers created");
 
-    let position_binding = VertexAttributeBinding::typed::<Vector3<f32>>();
-    buf.bind_to_attribute(info.position.index, &position_binding);
+            let position_binding = VertexAttributeBinding::typed::<Vector3<f32>>();
+            buf.bind_to_attribute(info.position.index, &position_binding);
 
-    log("Bound to attribute");
-
+            log("Bound to attribute");
+        }
+        None => log("Unable to create buffer"),
+    }
     program.activate();
 }

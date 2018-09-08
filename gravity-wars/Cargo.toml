@@ -9,4 +9,11 @@ crate-type = ["cdylib"]
 [dependencies]
 cgmath = "0.16.1"
 #gltf = "0.11"
-wasm-bindgen = "0.2.0"
+
+[dependencies.wasm-bindgen]
+git = "https://github.com/rustwasm/wasm-bindgen"
+features = ["nightly"]
+
+[dependencies.web-sys]
+git = "https://github.com/rustwasm/wasm-bindgen"
+features = ["HtmlCanvasElement", "WebGlActiveInfo", "WebGlBuffer", "WebGlProgram", "WebGlRenderingContext", "WebGlShader"]

@@ -13,8 +13,11 @@ extern "C" {
     pub type Response;
     #[wasm_bindgen(method, getter)]
     pub fn status(response: &Response) -> u32;
+}
 
-    #[wasm_bindgen(js_namespace=glue, js_name=fetchAsset)]
+#[wasm_bindgen(module = "./glue")]
+extern "C" {
+    #[wasm_bindgen(js_name=fetchAsset)]
     fn fetch_asset(uri: &str, callback: &FetchCallback);
 }
 

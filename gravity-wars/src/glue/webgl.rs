@@ -1,5 +1,3 @@
-use wasm_bindgen::prelude::*;
-
 use std::collections::HashMap;
 use std::error::Error;
 use std::mem;
@@ -7,8 +5,8 @@ use std::rc::Rc;
 use std::slice;
 
 use cgmath::{Matrix4, Vector3};
+use web_sys::{WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlShader};
 
-use glue;
 use rendering::renderer::GameRenderer;
 use rendering::shader;
 use rendering::shader::ShaderParamInfo;
@@ -18,34 +16,25 @@ pub const DEPTH_BUFFER_BIT: i32 = 0x0100;
 pub const STENCIL_BUFFER_BIT: i32 = 0x0400;
 pub const COLOR_BUFFER_BIT: i32 = 0x4000;
 
-pub const ARRAY_BUFFER: i32 = 0x8892;
-pub const ELEMENT_ARRAY_BUFFER: i32 = 0x8893;
-
-#[repr(i32)]
+#[repr(u32)]
 #[derive(Clone, Copy)]
 pub enum BufferBinding {
-    ArrayBuffer = ARRAY_BUFFER,
-    ElementArrayBuffer = ELEMENT_ARRAY_BUFFER,
+    ArrayBuffer = WebGlRenderingContext::ARRAY_BUFFER,
+    ElementArrayBuffer = WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
 }
 
-pub const STATIC_DRAW: i32 = 0x88E4;
-pub const DYNAMIC_DRAW: i32 = 0x88E8;
-pub const STREAM_DRAW: i32 = 0x88E0;
-
-pub const FLOAT: i32 = 0x1406;
-
-#[repr(i32)]
+#[repr(u32)]
 #[derive(Clone, Copy)]
 pub enum AttributeType {
-    Float = FLOAT,
+    Float = WebGlRenderingContext::FLOAT,
 }
 
-#[repr(i32)]
+#[repr(u32)]
 #[derive(Clone, Copy)]
 pub enum BufferUsage {
-    StaticDraw = STATIC_DRAW,
-    DynamicDraw = DYNAMIC_DRAW,
-    StreamDraw = STREAM_DRAW,
+    StaticDraw = WebGlRenderingContext::STATIC_DRAW,
+    DynamicDraw = WebGlRenderingContext::DYNAMIC_DRAW,
+    StreamDraw = WebGlRenderingContext::STREAM_DRAW,
 }
 
 pub const VERTEX_SHADER: i32 = 0x8B31;
@@ -60,105 +49,6 @@ pub const ACTIVE_UNIFORMS: i32 = 0x8B86;
 pub enum ShaderType {
     Vertex = VERTEX_SHADER,
     Fragment = FRAGMENT_SHADER,
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace=glue, js_name=getWebGLContext)]
-    pub fn get_webgl_context() -> WebGLRenderingContext;
-
-    pub type WebGLRenderingContext;
-    #[wasm_bindgen(method, js_name=clearColor)]
-    pub fn clear_color(context: &WebGLRenderingContext, r: f32, g: f32, b: f32, a: f32);
-    #[wasm_bindgen(method)]
-    pub fn clear(context: &WebGLRenderingContext, mask: i32);
-    #[wasm_bindgen(method, catch)]
-    pub fn vertex_attrib_pointer(
-        context: &WebGLRenderingContext,
-        index: u32,
-        size: i32,
-        attr_type: i32,
-        normalized: bool,
-        stride: u32,
-        offset: u32, // TODO: move to u64 when it no longer breaks wasm-bindgen.
-    ) -> Result<(), JsValue>;
-
-    type WebGLBuffer;
-    #[wasm_bindgen(method, js_name=createBuffer)]
-    fn create_buffer(context: &WebGLRenderingContext) -> WebGLBuffer;
-    #[wasm_bindgen(method, js_name=bindBuffer)]
-    fn bind_buffer(
-        context: &WebGLRenderingContext,
-        binding: i32,
-        buffer: &WebGLBuffer,
-    ) -> WebGLBuffer;
-    #[wasm_bindgen(method, js_name=bufferData)]
-    fn buffer_data(
-        context: &WebGLRenderingContext,
-        target: i32,
-        data: &[u8],
-        usage: i32,
-    ) -> WebGLBuffer;
-
-    pub type WebGLShader;
-    #[wasm_bindgen(method, js_name=createShader)]
-    pub fn create_shader(context: &WebGLRenderingContext, shader_type: i32) -> WebGLShader;
-    #[wasm_bindgen(method, js_name=shaderSource)]
-    pub fn shader_source(context: &WebGLRenderingContext, shader: &WebGLShader, source: &str);
-    #[wasm_bindgen(method, js_name=compileShader)]
-    pub fn compile_shader(context: &WebGLRenderingContext, shader: &WebGLShader);
-    #[wasm_bindgen(method, js_name=getShaderParameter)]
-    pub fn get_shader_parameter_boolean(
-        context: &WebGLRenderingContext,
-        shader: &WebGLShader,
-        param: i32,
-    ) -> bool;
-    #[wasm_bindgen(method, js_name=getShaderInfoLog)]
-    pub fn get_shader_info_log(context: &WebGLRenderingContext, shader: &WebGLShader) -> String;
-
-    pub type WebGLProgram;
-    #[wasm_bindgen(method, js_name=createProgram)]
-    pub fn create_program(context: &WebGLRenderingContext) -> WebGLProgram;
-    #[wasm_bindgen(method, js_name=attachShader)]
-    pub fn attach_shader(
-        context: &WebGLRenderingContext,
-        program: &WebGLProgram,
-        shader: &WebGLShader,
-    );
-    #[wasm_bindgen(method, js_name=linkProgram)]
-    pub fn link_program(context: &WebGLRenderingContext, program: &WebGLProgram);
-    #[wasm_bindgen(method, js_name=getProgramParameter)]
-    pub fn get_program_parameter_boolean(
-        context: &WebGLRenderingContext,
-        program: &WebGLProgram,
-        param: i32,
-    ) -> bool;
-    #[wasm_bindgen(method, js_name=getProgramParameter)]
-    pub fn get_program_parameter_i32(
-        context: &WebGLRenderingContext,
-        program: &WebGLProgram,
-        param: i32,
-    ) -> i32;
-    #[wasm_bindgen(method, js_name=getProgramInfoLog)]
-    pub fn get_program_info_log(context: &WebGLRenderingContext, program: &WebGLProgram) -> String;
-    #[wasm_bindgen(method, js_name=useProgram)]
-    pub fn use_program(context: &WebGLRenderingContext, program: &WebGLProgram);
-
-    type WebGLActiveInfo;
-    #[wasm_bindgen(method, js_name=getActiveAttrib)]
-    fn get_active_attribute(
-        context: &WebGLRenderingContext,
-        program: &WebGLProgram,
-        index: u32,
-    ) -> WebGLActiveInfo;
-    #[wasm_bindgen(method, js_name=getActiveUniform)]
-    fn get_active_uniform(
-        context: &WebGLRenderingContext,
-        program: &WebGLProgram,
-        index: u32,
-    ) -> WebGLActiveInfo;
-    #[wasm_bindgen(method, getter)]
-    fn name(info: &WebGLActiveInfo) -> String;
 }
 
 pub trait BufferDataItem: Sized {
@@ -177,51 +67,51 @@ impl<T: BufferDataItem> BufferDataItem for Vector3<T> {
 }
 
 pub struct Buffer {
-    buffer: WebGLBuffer,
+    buffer: WebGlBuffer,
     binding: BufferBinding,
-    context: Rc<WebGLRenderingContext>,
+    context: Rc<WebGlRenderingContext>,
 }
 
 impl Buffer {
-    pub fn new(context: Rc<WebGLRenderingContext>, binding: BufferBinding) -> Buffer {
-        let buffer = context.create_buffer();
-        Buffer {
+    pub fn new(context: Rc<WebGlRenderingContext>, binding: BufferBinding) -> Option<Buffer> {
+        let buffer = context.create_buffer()?;
+        Some(Buffer {
             buffer,
             binding,
             context,
-        }
+        })
     }
 
-    pub fn set_data<T: BufferDataItem>(&self, data: &[T]) {
+    pub fn set_data<T: BufferDataItem>(&self, data: &mut [T]) {
         self.bind();
+        // TODO: this is probably quite unsafe...
         let bytes = unsafe {
-            slice::from_raw_parts(data.as_ptr() as *const u8, data.len() * mem::size_of::<T>())
+            slice::from_raw_parts_mut(data.as_ptr() as *mut u8, data.len() * mem::size_of::<T>())
         };
         // TODO: support other hint values.
-        self.context
-            .buffer_data(self.binding as i32, bytes, STATIC_DRAW);
+        self.context.buffer_data_with_u8_array(
+            self.binding as u32,
+            bytes,
+            WebGlRenderingContext::STATIC_DRAW,
+        );
     }
 
     // TODO: take a ShaderParamInfo instead of just an index?
     pub fn bind_to_attribute(&self, index: usize, binding: &VertexAttributeBinding) {
         self.bind();
-        self.context
-            .vertex_attrib_pointer(
-                index as u32,
-                binding.num_components as i32,
-                binding.attr_type as i32,
-                binding.normalized,
-                binding.stride as u32,
-                binding.offset as u32,
-            )
-            .or_else(|e| {
-                glue::log(e.to_string());
-                Ok(())
-            });
+        self.context.vertex_attrib_pointer(
+            index as u32,
+            binding.num_components as i32,
+            binding.attr_type as u32,
+            binding.normalized,
+            binding.stride as i32,
+            binding.offset as i64,
+        );
     }
 
     fn bind(&self) {
-        self.context.bind_buffer(self.binding as i32, &self.buffer);
+        self.context
+            .bind_buffer(self.binding as u32, Some(&self.buffer));
     }
 }
 
@@ -260,105 +150,120 @@ impl VertexAttributeBinding {
     }
 }
 
-impl WebGLShader {
-    pub fn compile(
-        context: &WebGLRenderingContext,
-        shader_type: ShaderType,
-        source: &str,
-    ) -> Result<WebGLShader, String> {
-        let shader = context.create_shader(shader_type as i32);
-        context.shader_source(&shader, source);
-        context.compile_shader(&shader);
+pub fn compile_shader(
+    context: &WebGlRenderingContext,
+    shader_type: ShaderType,
+    source: &str,
+) -> Result<WebGlShader, String> {
+    let shader = context
+        .create_shader(shader_type as u32)
+        .ok_or_else(|| String::from("Unable to create shader object"))?;
+    context.shader_source(&shader, source);
+    context.compile_shader(&shader);
 
-        if context.get_shader_parameter_boolean(&shader, COMPILE_STATUS) {
-            Ok(shader)
-        } else {
-            Err(context.get_shader_info_log(&shader))
-        }
+    if context
+        .get_shader_parameter(&shader, WebGlRenderingContext::COMPILE_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
+        Ok(shader)
+    } else {
+        Err(context
+            .get_shader_info_log(&shader)
+            .unwrap_or_else(|| "Unknown error creating shader".into()))
     }
 }
 
 pub struct ShaderProgram {
-    program: WebGLProgram,
-    context: Rc<WebGLRenderingContext>,
+    program: WebGlProgram,
+    context: Rc<WebGlRenderingContext>,
 }
 
 impl ShaderProgram {
-    pub fn link<'a, T: Iterator<Item = &'a WebGLShader>>(
-        context: Rc<WebGLRenderingContext>,
+    pub fn link<'a, T: Iterator<Item = &'a WebGlShader>>(
+        context: Rc<WebGlRenderingContext>,
         shaders: T,
     ) -> Result<ShaderProgram, String> {
-        let program = context.create_program();
-        for ref shader in shaders {
+        let program = context
+            .create_program()
+            .ok_or_else(|| String::from("Unable to create shader object"))?;
+        for shader in shaders {
             context.attach_shader(&program, shader)
         }
         context.link_program(&program);
 
-        if context.get_program_parameter_boolean(&program, LINK_STATUS) {
+        if context
+            .get_program_parameter(&program, WebGlRenderingContext::LINK_STATUS)
+            .as_bool()
+            .unwrap_or(false)
+        {
             Ok(ShaderProgram { program, context })
         } else {
-            Err(context.get_program_info_log(&program))
+            Err(context
+                .get_program_info_log(&program)
+                .unwrap_or_else(|| "Unknown error creating program object".into()))
         }
     }
 }
 
 impl shader::ShaderProgram for ShaderProgram {
     fn attributes(&self) -> HashMap<Box<str>, ShaderParamInfo> {
-        let num_attributes =
-            self.context
-                .get_program_parameter_i32(&self.program, ACTIVE_ATTRIBUTES) as u32;
+        let num_attributes = self
+            .context
+            .get_program_parameter(&self.program, WebGlRenderingContext::ACTIVE_ATTRIBUTES)
+            .as_f64()
+            .unwrap() as u32; // TODO: create (and use) a safe conversion helper...
         let mut attributes = HashMap::<Box<str>, ShaderParamInfo>::new();
         for i in 0..num_attributes {
-            let info = self.context.get_active_attribute(&self.program, i);
-            attributes.insert(
-                info.name().into_boxed_str(),
-                ShaderParamInfo { index: i as usize },
-            );
+            if let Some(info) = self.context.get_active_attrib(&self.program, i) {
+                // TODO: log errors?
+                attributes.insert(
+                    info.name().into_boxed_str(),
+                    ShaderParamInfo { index: i as usize },
+                );
+            }
         }
         attributes
     }
 
     fn uniforms(&self) -> HashMap<Box<str>, ShaderParamInfo> {
-        let num_uniforms =
-            self.context
-                .get_program_parameter_i32(&self.program, ACTIVE_UNIFORMS) as u32;
+        let num_uniforms = self
+            .context
+            .get_program_parameter(&self.program, WebGlRenderingContext::ACTIVE_UNIFORMS)
+            .as_f64()
+            .unwrap() as u32;
         let mut uniforms = HashMap::<Box<str>, ShaderParamInfo>::new();
         for i in 0..num_uniforms {
-            let info = self.context.get_active_uniform(&self.program, i);
-            uniforms.insert(
-                info.name().into_boxed_str(),
-                ShaderParamInfo { index: i as usize },
-            );
+            if let Some(info) = self.context.get_active_uniform(&self.program, i) {
+                // TODO: log errors?
+                uniforms.insert(
+                    info.name().into_boxed_str(),
+                    ShaderParamInfo { index: i as usize },
+                );
+            }
         }
         uniforms
     }
 
     fn activate(&self) {
-        self.context.use_program(&self.program);
-    }
-}
-
-impl WebGLRenderingContext {
-    pub fn new() -> WebGLRenderingContext {
-        get_webgl_context()
+        self.context.use_program(Some(&self.program));
     }
 }
 
 pub struct WebGlRenderer {
-    context: Rc<WebGLRenderingContext>,
+    context: Rc<WebGlRenderingContext>,
     aspect_ratio: f32,
 }
 
 impl WebGlRenderer {
-    pub fn new() -> WebGlRenderer {
-        let context = Rc::new(WebGLRenderingContext::new());
+    pub fn new(context: WebGlRenderingContext) -> WebGlRenderer {
         WebGlRenderer {
-            context,
+            context: Rc::new(context),
             aspect_ratio: 1.0,
         }
     }
 
-    pub fn context(&self) -> &Rc<WebGLRenderingContext> {
+    pub fn context(&self) -> &Rc<WebGlRenderingContext> {
         &self.context
     }
 }
@@ -366,7 +271,7 @@ impl WebGlRenderer {
 impl GameRenderer for WebGlRenderer {
     fn render(&self, state: &GameState) -> Result<(), Box<Error>> {
         self.context.clear_color(0.0, 0.0, 0.0, 1.0);
-        self.context.clear(COLOR_BUFFER_BIT);
+        self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
 
         let projection: Matrix4<f32> = state.camera.projection(self.aspect_ratio).into();
 
