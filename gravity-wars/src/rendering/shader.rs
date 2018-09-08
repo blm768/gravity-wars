@@ -8,6 +8,8 @@ pub struct ShaderParamInfo {
 pub trait ShaderProgram {
     fn attributes(&self) -> HashMap<Box<str>, ShaderParamInfo>;
     fn uniforms(&self) -> HashMap<Box<str>, ShaderParamInfo>;
+
+    fn activate(&self);
 }
 
 #[derive(Debug)]

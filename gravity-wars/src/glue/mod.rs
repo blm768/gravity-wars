@@ -2,10 +2,14 @@ use wasm_bindgen::prelude::*;
 
 use std::str;
 
+use cgmath::Vector3;
+
 use glue::asset::{AssetData, AssetLoader, FetchError};
-use glue::webgl::{ShaderProgram, ShaderType, WebGLShader, WebGlRenderer};
+use glue::webgl::{
+    Buffer, BufferBinding, ShaderType, VertexAttributeBinding, WebGLShader, WebGlRenderer,
+};
 use rendering::renderer::GameRenderer;
-use rendering::shader::MaterialShaderInfo;
+use rendering::shader::{MaterialShaderInfo, ShaderProgram};
 use state::GameState;
 
 pub mod asset;
@@ -80,12 +84,29 @@ pub fn start_game(assets: &AssetData) {
         &renderer,
         ShaderType::Fragment,
     ).unwrap();
-    let program = ShaderProgram::link(
+    let program = webgl::ShaderProgram::link(
         renderer.context().clone(),
         [vertex_shader, fragment_shader].iter(),
     ).unwrap();
-    let info = MaterialShaderInfo::from_program(&program);
-    log(&format!("{:?}", info));
+    let info = MaterialShaderInfo::from_program(&program).unwrap();
+
+    let vertices = vec![
+        Vector3::new(0.0, 0.0, 0.0),
+        Vector3::new(1.0, 0.0, 0.0),
+        Vector3::new(0.0, 1.0, 0.0),
+    ];
 
     log("Shaders compiled");
+
+    let buf = Buffer::new(renderer.context().clone(), BufferBinding::ArrayBuffer);
+    buf.set_data(&vertices);
+
+    log("Buffers created");
+
+    let position_binding = VertexAttributeBinding::typed::<Vector3<f32>>();
+    buf.bind_to_attribute(info.position.index, &position_binding);
+
+    log("Bound to attribute");
+
+    program.activate();
 }

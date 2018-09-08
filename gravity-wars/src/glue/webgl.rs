@@ -2,10 +2,13 @@ use wasm_bindgen::prelude::*;
 
 use std::collections::HashMap;
 use std::error::Error;
+use std::mem;
 use std::rc::Rc;
+use std::slice;
 
-use cgmath::Matrix4;
+use cgmath::{Matrix4, Vector3};
 
+use glue;
 use rendering::renderer::GameRenderer;
 use rendering::shader;
 use rendering::shader::ShaderParamInfo;
@@ -15,6 +18,36 @@ pub const DEPTH_BUFFER_BIT: i32 = 0x0100;
 pub const STENCIL_BUFFER_BIT: i32 = 0x0400;
 pub const COLOR_BUFFER_BIT: i32 = 0x4000;
 
+pub const ARRAY_BUFFER: i32 = 0x8892;
+pub const ELEMENT_ARRAY_BUFFER: i32 = 0x8893;
+
+#[repr(i32)]
+#[derive(Clone, Copy)]
+pub enum BufferBinding {
+    ArrayBuffer = ARRAY_BUFFER,
+    ElementArrayBuffer = ELEMENT_ARRAY_BUFFER,
+}
+
+pub const STATIC_DRAW: i32 = 0x88E4;
+pub const DYNAMIC_DRAW: i32 = 0x88E8;
+pub const STREAM_DRAW: i32 = 0x88E0;
+
+pub const FLOAT: i32 = 0x1406;
+
+#[repr(i32)]
+#[derive(Clone, Copy)]
+pub enum AttributeType {
+    Float = FLOAT,
+}
+
+#[repr(i32)]
+#[derive(Clone, Copy)]
+pub enum BufferUsage {
+    StaticDraw = STATIC_DRAW,
+    DynamicDraw = DYNAMIC_DRAW,
+    StreamDraw = STREAM_DRAW,
+}
+
 pub const VERTEX_SHADER: i32 = 0x8B31;
 pub const FRAGMENT_SHADER: i32 = 0x8B30;
 pub const COMPILE_STATUS: i32 = 0x8B81;
@@ -23,6 +56,7 @@ pub const ACTIVE_ATTRIBUTES: i32 = 0x8B89;
 pub const ACTIVE_UNIFORMS: i32 = 0x8B86;
 
 #[repr(i32)]
+#[derive(Clone, Copy)]
 pub enum ShaderType {
     Vertex = VERTEX_SHADER,
     Fragment = FRAGMENT_SHADER,
@@ -38,6 +72,33 @@ extern "C" {
     pub fn clear_color(context: &WebGLRenderingContext, r: f32, g: f32, b: f32, a: f32);
     #[wasm_bindgen(method)]
     pub fn clear(context: &WebGLRenderingContext, mask: i32);
+    #[wasm_bindgen(method, catch)]
+    pub fn vertex_attrib_pointer(
+        context: &WebGLRenderingContext,
+        index: u32,
+        size: i32,
+        attr_type: i32,
+        normalized: bool,
+        stride: u32,
+        offset: u32, // TODO: move to u64 when it no longer breaks wasm-bindgen.
+    ) -> Result<(), JsValue>;
+
+    type WebGLBuffer;
+    #[wasm_bindgen(method, js_name=createBuffer)]
+    fn create_buffer(context: &WebGLRenderingContext) -> WebGLBuffer;
+    #[wasm_bindgen(method, js_name=bindBuffer)]
+    fn bind_buffer(
+        context: &WebGLRenderingContext,
+        binding: i32,
+        buffer: &WebGLBuffer,
+    ) -> WebGLBuffer;
+    #[wasm_bindgen(method, js_name=bufferData)]
+    fn buffer_data(
+        context: &WebGLRenderingContext,
+        target: i32,
+        data: &[u8],
+        usage: i32,
+    ) -> WebGLBuffer;
 
     pub type WebGLShader;
     #[wasm_bindgen(method, js_name=createShader)]
@@ -80,6 +141,8 @@ extern "C" {
     ) -> i32;
     #[wasm_bindgen(method, js_name=getProgramInfoLog)]
     pub fn get_program_info_log(context: &WebGLRenderingContext, program: &WebGLProgram) -> String;
+    #[wasm_bindgen(method, js_name=useProgram)]
+    pub fn use_program(context: &WebGLRenderingContext, program: &WebGLProgram);
 
     type WebGLActiveInfo;
     #[wasm_bindgen(method, js_name=getActiveAttrib)]
@@ -96,6 +159,105 @@ extern "C" {
     ) -> WebGLActiveInfo;
     #[wasm_bindgen(method, getter)]
     fn name(info: &WebGLActiveInfo) -> String;
+}
+
+pub trait BufferDataItem: Sized {
+    const ATTRIB_TYPE: AttributeType;
+    const ATTRIB_COUNT: usize;
+}
+
+impl BufferDataItem for f32 {
+    const ATTRIB_TYPE: AttributeType = AttributeType::Float;
+    const ATTRIB_COUNT: usize = 1;
+}
+
+impl<T: BufferDataItem> BufferDataItem for Vector3<T> {
+    const ATTRIB_TYPE: AttributeType = <T as BufferDataItem>::ATTRIB_TYPE;
+    const ATTRIB_COUNT: usize = 3;
+}
+
+pub struct Buffer {
+    buffer: WebGLBuffer,
+    binding: BufferBinding,
+    context: Rc<WebGLRenderingContext>,
+}
+
+impl Buffer {
+    pub fn new(context: Rc<WebGLRenderingContext>, binding: BufferBinding) -> Buffer {
+        let buffer = context.create_buffer();
+        Buffer {
+            buffer,
+            binding,
+            context,
+        }
+    }
+
+    pub fn set_data<T: BufferDataItem>(&self, data: &[T]) {
+        self.bind();
+        let bytes = unsafe {
+            slice::from_raw_parts(data.as_ptr() as *const u8, data.len() * mem::size_of::<T>())
+        };
+        // TODO: support other hint values.
+        self.context
+            .buffer_data(self.binding as i32, bytes, STATIC_DRAW);
+    }
+
+    // TODO: take a ShaderParamInfo instead of just an index?
+    pub fn bind_to_attribute(&self, index: usize, binding: &VertexAttributeBinding) {
+        self.bind();
+        self.context
+            .vertex_attrib_pointer(
+                index as u32,
+                binding.num_components as i32,
+                binding.attr_type as i32,
+                binding.normalized,
+                binding.stride as u32,
+                binding.offset as u32,
+            )
+            .or_else(|e| {
+                glue::log(e.to_string());
+                Ok(())
+            });
+    }
+
+    fn bind(&self) {
+        self.context.bind_buffer(self.binding as i32, &self.buffer);
+    }
+}
+
+pub struct VertexAttributeBinding {
+    pub attr_type: AttributeType,
+    pub num_components: usize,
+    pub normalized: bool,
+    pub stride: usize,
+    pub offset: usize,
+}
+
+impl VertexAttributeBinding {
+    pub fn typed<T: BufferDataItem>() -> VertexAttributeBinding {
+        VertexAttributeBinding {
+            attr_type: T::ATTRIB_TYPE,
+            num_components: T::ATTRIB_COUNT,
+            normalized: false,
+            stride: 0,
+            offset: 0,
+        }
+    }
+
+    pub fn set_normalized(&mut self, normalized: bool) -> &mut VertexAttributeBinding {
+        self.normalized = normalized;
+        self
+    }
+
+    pub fn set_stride(&mut self, stride: usize) -> &mut VertexAttributeBinding {
+        self.stride = stride;
+        self
+    }
+
+    pub fn set_offset(&mut self, offset: usize) -> &mut VertexAttributeBinding {
+        self.offset = offset;
+        self
+    }
 }
 
 impl WebGLShader {
@@ -169,6 +331,10 @@ impl shader::ShaderProgram for ShaderProgram {
             );
         }
         uniforms
+    }
+
+    fn activate(&self) {
+        self.context.use_program(&self.program);
     }
 }
 
