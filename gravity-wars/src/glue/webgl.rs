@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::slice;
 
 use cgmath::{Matrix4, Vector3};
+use wasm_bindgen::prelude::*;
 use web_sys::{WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlShader};
 
 use rendering::renderer::GameRenderer;
@@ -16,21 +17,35 @@ pub const DEPTH_BUFFER_BIT: i32 = 0x0100;
 pub const STENCIL_BUFFER_BIT: i32 = 0x0400;
 pub const COLOR_BUFFER_BIT: i32 = 0x4000;
 
+#[wasm_bindgen(module = "./glue")]
+extern "C" {
+    // Wraps vertexAttribPointer to take a u32 offset instead of i64 (which isn't what JS seems to actually be expecting…)
+    fn my_vertex_attrib_pointer(
+        context: &WebGlRenderingContext,
+        index: u32,
+        size: i32,
+        data_type: u32,
+        normalized: bool,
+        stride: i32,
+        offset: u32,
+    );
+}
+
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum BufferBinding {
     ArrayBuffer = WebGlRenderingContext::ARRAY_BUFFER,
     ElementArrayBuffer = WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
 }
 
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum AttributeType {
     Float = WebGlRenderingContext::FLOAT,
 }
 
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum BufferUsage {
     StaticDraw = WebGlRenderingContext::STATIC_DRAW,
     DynamicDraw = WebGlRenderingContext::DYNAMIC_DRAW,
@@ -99,13 +114,14 @@ impl Buffer {
     // TODO: take a ShaderParamInfo instead of just an index?
     pub fn bind_to_attribute(&self, index: usize, binding: &VertexAttributeBinding) {
         self.bind();
-        self.context.vertex_attrib_pointer(
+        my_vertex_attrib_pointer(
+            &self.context,
             index as u32,
             binding.num_components as i32,
             binding.attr_type as u32,
             binding.normalized,
             binding.stride as i32,
-            binding.offset as i64,
+            binding.offset as u32,
         );
     }
 
@@ -115,6 +131,7 @@ impl Buffer {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct VertexAttributeBinding {
     pub attr_type: AttributeType,
     pub num_components: usize,
