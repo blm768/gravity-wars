@@ -6,6 +6,7 @@ use std::slice;
 
 use cgmath::{Matrix4, Vector3};
 use wasm_bindgen::prelude::*;
+use web_sys::{Element, HtmlCanvasElement};
 use web_sys::{
     WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLocation,
 };
@@ -293,7 +294,7 @@ impl shader::ShaderProgram for ShaderProgram {
     }
 
     fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>) {
-        let raw: &[f32; 16] = value.as_ref(); // TODO: make sure order is correct.
+        let raw: &[f32; 16] = value.as_ref();
         self.context.uniform_matrix4fv_with_f32_array(
             Some(&self.uniforms[index].location),
             false,
@@ -303,15 +304,21 @@ impl shader::ShaderProgram for ShaderProgram {
 }
 
 pub struct WebGlRenderer {
+    canvas_element: Element,
+    canvas: HtmlCanvasElement,
     context: Rc<WebGlRenderingContext>,
-    aspect_ratio: f32,
 }
 
 impl WebGlRenderer {
-    pub fn new(context: WebGlRenderingContext) -> WebGlRenderer {
+    pub fn new(
+        canvas_element: Element,
+        canvas: HtmlCanvasElement,
+        context: WebGlRenderingContext,
+    ) -> WebGlRenderer {
         WebGlRenderer {
+            canvas_element,
+            canvas,
             context: Rc::new(context),
-            aspect_ratio: 1.0,
         }
     }
 
@@ -320,7 +327,28 @@ impl WebGlRenderer {
     }
 
     pub fn aspect_ratio(&self) -> f32 {
-        self.aspect_ratio
+        self.context.drawing_buffer_width() as f32 / self.context.drawing_buffer_height() as f32
+    }
+
+    pub fn set_viewport(&self) {
+        use std::cmp::max;
+
+        let width = max(self.canvas_element.client_width(), 0) as u32;
+        let height = max(self.canvas_element.client_height(), 0) as u32;
+
+        if self.canvas.width() != width {
+            self.canvas.set_width(width);
+        }
+        if self.canvas.height() != height {
+            self.canvas.set_height(height);
+        }
+
+        self.context.viewport(
+            0,
+            0,
+            self.context.drawing_buffer_width(),
+            self.context.drawing_buffer_height(),
+        );
     }
 }
 
@@ -329,7 +357,7 @@ impl GameRenderer for WebGlRenderer {
         self.context.clear_color(0.0, 0.0, 0.0, 1.0);
         self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
 
-        let projection: Matrix4<f32> = state.camera.projection(self.aspect_ratio).into();
+        let projection: Matrix4<f32> = state.camera.projection(self.aspect_ratio()).into();
 
         // TODO: implement.
         for entity in &state.map.entities {

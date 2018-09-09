@@ -16,4 +16,15 @@ features = ["nightly"]
 
 [dependencies.web-sys]
 git = "https://github.com/rustwasm/wasm-bindgen"
-features = ["HtmlCanvasElement", "WebGlActiveInfo", "WebGlBuffer", "WebGlProgram", "WebGlRenderingContext", "WebGlShader", "WebGlUniformLocation"]
+features = [
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "WebGlActiveInfo",
+    "WebGlBuffer",
+    "WebGlProgram",
+    "WebGlRenderingContext",
+    "WebGlShader",
+    "WebGlUniformLocation",
+    "Window",
+]

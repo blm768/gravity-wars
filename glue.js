@@ -1,10 +1,5 @@
 import { WasmFetchResult } from './gravity_wars'
 
-export function getWebGlContext() {
-    let canvas = document.getElementById("game_canvas");
-    return canvas.getContext("webgl");
-}
-
 export function fetchAsset(uri, callback) {
     const handleResponse = (response) => {
         if (!response.ok) {
