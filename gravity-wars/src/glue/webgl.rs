@@ -6,7 +6,9 @@ use std::slice;
 
 use cgmath::{Matrix4, Vector3};
 use wasm_bindgen::prelude::*;
-use web_sys::{WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlShader};
+use web_sys::{
+    WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLocation,
+};
 
 use rendering::renderer::GameRenderer;
 use rendering::shader;
@@ -123,6 +125,7 @@ impl Buffer {
             binding.stride as i32,
             binding.offset as u32,
         );
+        self.context.enable_vertex_attrib_array(index as u32);
     }
 
     fn bind(&self) {
@@ -191,9 +194,15 @@ pub fn compile_shader(
     }
 }
 
+struct ShaderUniformInformation {
+    name: Box<str>,
+    location: WebGlUniformLocation,
+}
+
 pub struct ShaderProgram {
     program: WebGlProgram,
     context: Rc<WebGlRenderingContext>,
+    uniforms: Vec<ShaderUniformInformation>,
 }
 
 impl ShaderProgram {
@@ -214,12 +223,40 @@ impl ShaderProgram {
             .as_bool()
             .unwrap_or(false)
         {
-            Ok(ShaderProgram { program, context })
+            let uniforms = ShaderProgram::get_uniform_info(&context, &program);
+            Ok(ShaderProgram {
+                program,
+                context,
+                uniforms,
+            })
         } else {
             Err(context
                 .get_program_info_log(&program)
                 .unwrap_or_else(|| "Unknown error creating program object".into()))
         }
+    }
+
+    fn get_uniform_info(
+        context: &WebGlRenderingContext,
+        program: &WebGlProgram,
+    ) -> Vec<ShaderUniformInformation> {
+        let num_uniforms = context
+            .get_program_parameter(&program, WebGlRenderingContext::ACTIVE_UNIFORMS)
+            .as_f64()
+            .unwrap() as u32; // TODO: create (and use) a safe conversion helper...
+        let mut uniforms = Vec::<ShaderUniformInformation>::new();
+        uniforms.reserve_exact(num_uniforms as usize);
+
+        for i in 0..num_uniforms {
+            // TODO: log errors?
+            if let Some(info) = context.get_active_uniform(&program, i) {
+                let name: Box<str> = info.name().into();
+                if let Some(location) = context.get_uniform_location(&program, &name) {
+                    uniforms.push(ShaderUniformInformation { name, location });
+                }
+            }
+        }
+        uniforms
     }
 }
 
@@ -229,7 +266,7 @@ impl shader::ShaderProgram for ShaderProgram {
             .context
             .get_program_parameter(&self.program, WebGlRenderingContext::ACTIVE_ATTRIBUTES)
             .as_f64()
-            .unwrap() as u32; // TODO: create (and use) a safe conversion helper...
+            .unwrap() as u32;
         let mut attributes = HashMap::<Box<str>, ShaderParamInfo>::new();
         for i in 0..num_attributes {
             if let Some(info) = self.context.get_active_attrib(&self.program, i) {
@@ -244,26 +281,24 @@ impl shader::ShaderProgram for ShaderProgram {
     }
 
     fn uniforms(&self) -> HashMap<Box<str>, ShaderParamInfo> {
-        let num_uniforms = self
-            .context
-            .get_program_parameter(&self.program, WebGlRenderingContext::ACTIVE_UNIFORMS)
-            .as_f64()
-            .unwrap() as u32;
-        let mut uniforms = HashMap::<Box<str>, ShaderParamInfo>::new();
-        for i in 0..num_uniforms {
-            if let Some(info) = self.context.get_active_uniform(&self.program, i) {
-                // TODO: log errors?
-                uniforms.insert(
-                    info.name().into_boxed_str(),
-                    ShaderParamInfo { index: i as usize },
-                );
-            }
-        }
-        uniforms
+        self.uniforms
+            .iter()
+            .enumerate()
+            .map({ |(i, uniform)| (uniform.name.clone(), ShaderParamInfo { index: i }) })
+            .collect::<HashMap<_, _>>()
     }
 
     fn activate(&self) {
         self.context.use_program(Some(&self.program));
+    }
+
+    fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>) {
+        let raw: &[f32; 16] = value.as_ref(); // TODO: make sure order is correct.
+        self.context.uniform_matrix4fv_with_f32_array(
+            Some(&self.uniforms[index].location),
+            false,
+            raw,
+        );
     }
 }
 
@@ -282,6 +317,10 @@ impl WebGlRenderer {
 
     pub fn context(&self) -> &Rc<WebGlRenderingContext> {
         &self.context
+    }
+
+    pub fn aspect_ratio(&self) -> f32 {
+        self.aspect_ratio
     }
 }
 

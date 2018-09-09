@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use cgmath::Matrix4;
+
 #[derive(Clone, Debug)]
 pub struct ShaderParamInfo {
     pub index: usize,
@@ -10,6 +12,7 @@ pub trait ShaderProgram {
     fn uniforms(&self) -> HashMap<Box<str>, ShaderParamInfo>;
 
     fn activate(&self);
+    fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>);
 }
 
 #[derive(Debug)]

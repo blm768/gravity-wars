@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 
 use std::str;
 
-use cgmath::Vector3;
+use cgmath::{Matrix4, SquareMatrix, Vector3};
 use web_sys::{WebGlRenderingContext, WebGlShader};
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
@@ -66,8 +66,6 @@ fn compile_shader_from_asset(
 pub fn start_game(assets: &AssetData) {
     let state = GameState::new();
 
-    //let canvas =
-
     let renderer = WebGlRenderer::new(getWebGlContext());
     if let Err(_error) = renderer.render(&state) {
         log("Rendering error");
@@ -111,4 +109,17 @@ pub fn start_game(assets: &AssetData) {
         None => log("Unable to create buffer"),
     }
     program.activate();
+
+    renderer.context().clear_color(0.0, 0.0, 0.0, 1.0);
+    renderer
+        .context()
+        .clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+
+    let projection: Matrix4<f32> = state.camera.projection(renderer.aspect_ratio()).into();
+    let modelview = Matrix4::<f32>::identity();
+
+    program.set_uniform_mat4(info.projection.index, projection);
+    program.set_uniform_mat4(info.model_view.index, modelview);
+
+    log("Uniforms bound");
 }
