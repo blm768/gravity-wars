@@ -1,4 +1,5 @@
 extern crate cgmath;
+extern crate gltf;
 extern crate wasm_bindgen;
 extern crate web_sys;
 

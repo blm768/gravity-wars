@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::*;
 
+use std::io::Cursor;
 use std::str;
 
 use cgmath::{Matrix4, Rad, Vector3};
@@ -7,8 +8,12 @@ use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlCanvasElement, Window};
 use web_sys::{WebGlRenderingContext, WebGlShader};
 
+use gltf::Gltf;
+
 use glue::asset::{AssetData, AssetLoader, FetchError};
-use glue::webgl::{Buffer, BufferBinding, ShaderType, VertexAttributeBinding, WebGlRenderer};
+use glue::webgl::buffer::{Buffer, BufferBinding, VertexAttributeBinding};
+use glue::webgl::mesh::{find_mesh, Mesh};
+use glue::webgl::{ShaderType, WebGlRenderer};
 use rendering::renderer::GameRenderer;
 use rendering::shader::{MaterialShaderInfo, ShaderProgram};
 use state::GameState;
@@ -47,6 +52,7 @@ pub fn init_game() -> AssetLoader {
     let assets = AssetLoader::new(start_game);
     assets.load("shaders/vertex.glsl");
     assets.load("shaders/fragment.glsl");
+    assets.load("cube.glb");
 
     assets
 }
@@ -104,6 +110,16 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         [vertex_shader, fragment_shader].iter(),
     )?;
     let info = MaterialShaderInfo::from_program(&program).map_err(|e| format!("{:?}", e))?;
+
+    let raw_gltf = assets
+        .get("cube.glb")
+        .map_err(|_| String::from("Unable to retrieve cube"))?;
+    let gltf = Gltf::from_reader(Cursor::new(raw_gltf)).map_err(|e| format!("{:?}", e))?;
+    let mesh = Mesh::from_gltf(
+        renderer.context().clone(),
+        find_mesh(&gltf).ok_or_else(|| String::from("Unable to find mesh"))?,
+    );
+    log(&format!("{:?}", mesh));
 
     let mut vertices = vec![
         Vector3::new(0.0, 0.0, 0.0),
