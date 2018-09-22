@@ -13,7 +13,7 @@ use gltf::Gltf;
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
 use glue::webgl::buffer::{Buffer, BufferBinding, VertexAttributeBinding};
-use glue::webgl::mesh::GltfLoader;
+use glue::webgl::gltf::GltfLoader;
 use glue::webgl::{ShaderType, WebGlRenderer};
 use rendering::renderer::GameRenderer;
 use rendering::shader::{MaterialShaderInfo, ShaderProgram};
@@ -159,7 +159,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     log("Uniforms bound");
 
     //renderer.context() draw_arrays(WebGlRenderingContext::TRIANGLES, 0, vertices.len() as i32);
-    mesh.draw(&info);
+    mesh.draw(&program, &info);
 
     Ok(())
 }

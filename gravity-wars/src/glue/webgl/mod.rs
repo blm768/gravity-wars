@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::rc::Rc;
 
-use cgmath::Matrix4;
+use cgmath::{Matrix4, Vector4};
 use web_sys::{Element, HtmlCanvasElement};
 use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLocation};
 
@@ -12,6 +12,7 @@ use rendering::shader::ShaderParamInfo;
 use state::GameState;
 
 pub mod buffer;
+pub mod gltf;
 pub mod mesh;
 
 pub const DEPTH_BUFFER_BIT: i32 = 0x0100;
@@ -52,7 +53,8 @@ pub fn compile_shader(
     } else {
         Err(context
             .get_shader_info_log(&shader)
-            .unwrap_or_else(|| "Unknown error creating shader".into()))
+            .unwrap_or_else(|| "Unknown error".into()))
+            .map_err(|e| format!("Error compiling shader: {}", e))
     }
 }
 
@@ -162,6 +164,12 @@ impl shader::ShaderProgram for ShaderProgram {
             raw,
         );
     }
+
+    fn set_uniform_vec4(&self, index: usize, value: Vector4<f32>) {
+        let raw: &[f32; 4] = value.as_ref();
+        self.context
+            .uniform4fv_with_f32_array(Some(&self.uniforms[index].location), raw);
+    }
 }
 
 pub struct WebGlRenderer {
@@ -214,16 +222,9 @@ impl WebGlRenderer {
 }
 
 impl GameRenderer for WebGlRenderer {
-    fn render(&self, state: &GameState) -> Result<(), Box<Error>> {
+    fn render(&self, _state: &GameState) -> Result<(), Box<Error>> {
         self.context.clear_color(0.0, 0.0, 0.0, 1.0);
         self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
-
-        let projection: Matrix4<f32> = state.camera.projection(self.aspect_ratio()).into();
-
-        // TODO: implement.
-        for entity in &state.map.entities {
-            let modelview_transform = Matrix4::<f32>::from_translation(entity.position.extend(0.0));
-        }
 
         Ok(())
     }

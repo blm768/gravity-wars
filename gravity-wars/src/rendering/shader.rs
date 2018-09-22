@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cgmath::Matrix4;
+use cgmath::{Matrix4, Vector4};
 
 #[derive(Clone, Debug)]
 pub struct ShaderParamInfo {
@@ -13,6 +13,7 @@ pub trait ShaderProgram {
 
     fn activate(&self);
     fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>);
+    fn set_uniform_vec4(&self, index: usize, value: Vector4<f32>);
 }
 
 #[derive(Debug)]
@@ -20,6 +21,7 @@ pub struct MaterialShaderInfo {
     pub position: ShaderParamInfo,
     pub projection: ShaderParamInfo,
     pub model_view: ShaderParamInfo,
+    pub base_color: Option<ShaderParamInfo>,
 }
 
 #[derive(Debug)]
@@ -41,14 +43,11 @@ impl MaterialShaderInfo {
             None => Err(ShaderInfoError::MissingUniform(String::from(name))),
         };
 
-        let position = get_attribute("position")?;
-        let projection = get_uniform("projection")?;
-        let model_view = get_uniform("modelView")?;
-
         Ok(MaterialShaderInfo {
-            position,
-            projection,
-            model_view,
+            position: get_attribute("position")?,
+            projection: get_uniform("projection")?,
+            model_view: get_uniform("modelView")?,
+            base_color: get_uniform("baseColor").ok(),
         })
     }
 }

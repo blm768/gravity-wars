@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 [dependencies]
 cgmath = "0.16.1"
 gltf = "0.11"
+rgb = "0.8"
 
 [dependencies.wasm-bindgen]
 git = "https://github.com/rustwasm/wasm-bindgen"
