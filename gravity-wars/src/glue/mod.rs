@@ -5,7 +5,8 @@ use std::str;
 
 use cgmath::{Matrix4, Rad, Vector3};
 use wasm_bindgen::JsCast;
-use web_sys::{Element, HtmlCanvasElement, Window};
+use web_sys;
+use web_sys::{Element, HtmlCanvasElement};
 use web_sys::{WebGlRenderingContext, WebGlShader};
 
 use gltf::Gltf;
@@ -29,7 +30,7 @@ extern "C" {
 }
 
 pub fn get_canvas() -> Option<(Element, HtmlCanvasElement)> {
-    let document = Window::document().unwrap();
+    let document = web_sys::window().unwrap().document().unwrap();
     let canvas_element = document.get_element_by_id("game_canvas")?;
     let canvas = document
         .get_element_by_id("game_canvas")?
