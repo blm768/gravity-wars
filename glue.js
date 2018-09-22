@@ -19,8 +19,3 @@ export function fetchAsset(uri, callback) {
         .then(handleResponse)
         .catch(err => callback(WasmFetchResult.net_error(err.message)));
 }
-
-// Workaround for issues with 64-bit values (BigNum)
-export function my_vertex_attrib_pointer(context, index, size, type, normalized, stride, offset) {
-    context.vertexAttribPointer(index, size, type, normalized, stride, offset);
-}

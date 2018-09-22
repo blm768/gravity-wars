@@ -12,7 +12,7 @@ use gltf::Gltf;
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
 use glue::webgl::buffer::{Buffer, BufferBinding, VertexAttributeBinding};
-use glue::webgl::mesh::{find_mesh, Mesh};
+use glue::webgl::mesh::GltfLoader;
 use glue::webgl::{ShaderType, WebGlRenderer};
 use rendering::renderer::GameRenderer;
 use rendering::shader::{MaterialShaderInfo, ShaderProgram};
@@ -115,10 +115,13 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         .get("cube.glb")
         .map_err(|_| String::from("Unable to retrieve cube"))?;
     let gltf = Gltf::from_reader(Cursor::new(raw_gltf)).map_err(|e| format!("{:?}", e))?;
-    let mesh = Mesh::from_gltf(
-        renderer.context().clone(),
-        find_mesh(&gltf).ok_or_else(|| String::from("Unable to find mesh"))?,
-    );
+    let mut loader = GltfLoader::new(renderer.context().clone(), &gltf);
+    let first_mesh = loader
+        .first_mesh()
+        .ok_or_else(|| String::from("Unable to find mesh"))?;
+    let mesh = loader
+        .load_mesh(&first_mesh)
+        .map_err(|_| String::from("Unable to load mesh"))?;
     log(&format!("{:?}", mesh));
 
     let mut vertices = vec![
@@ -127,15 +130,13 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         Vector3::new(0.0, 1.0, 0.0),
     ];
 
-    log("Shaders compiled");
-
     let buffer = Buffer::new(renderer.context().clone(), BufferBinding::ArrayBuffer)
         .ok_or_else(|| String::from("Unable to create buffer object"))?;
     buffer.set_data(&mut vertices);
 
     log("Buffers created");
 
-    let position_binding = VertexAttributeBinding::typed::<Vector3<f32>>();
+    let position_binding = VertexAttributeBinding::typed::<Vector3<f32>>(vertices.len());
     buffer.bind_to_attribute(info.position.index, &position_binding);
 
     program.activate();
@@ -147,16 +148,17 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         .clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
 
     let projection: Matrix4<f32> = state.camera.projection(renderer.aspect_ratio()).into();
-    let modelview = Matrix4::<f32>::from_angle_z(Rad(0.5));
+    let modelview = Matrix4::<f32>::from_angle_x(Rad(0.5))
+        * Matrix4::<f32>::from_angle_z(Rad(0.5))
+        * Matrix4::<f32>::from_scale(0.5);
 
     program.set_uniform_mat4(info.projection.index, projection);
     program.set_uniform_mat4(info.model_view.index, modelview);
 
     log("Uniforms bound");
 
-    renderer
-        .context()
-        .draw_arrays(WebGlRenderingContext::TRIANGLES, 0, vertices.len() as i32);
+    //renderer.context() draw_arrays(WebGlRenderingContext::TRIANGLES, 0, vertices.len() as i32);
+    mesh.draw(&info);
 
     Ok(())
 }

@@ -1,3 +1,5 @@
+#![feature(try_from)]
+
 extern crate cgmath;
 extern crate gltf;
 extern crate wasm_bindgen;
