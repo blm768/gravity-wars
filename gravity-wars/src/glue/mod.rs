@@ -1,9 +1,11 @@
 use wasm_bindgen::prelude::*;
 
+use std::cell::RefCell;
 use std::io::Cursor;
+use std::rc::Rc;
 use std::str;
 
-use cgmath::{Matrix4, Rad, Vector3};
+use cgmath::{Matrix4, Rad};
 use wasm_bindgen::JsCast;
 use web_sys;
 use web_sys::{Element, HtmlCanvasElement};
@@ -12,7 +14,6 @@ use web_sys::{WebGlRenderingContext, WebGlShader};
 use gltf::Gltf;
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
-use glue::webgl::buffer::{Buffer, BufferBinding, VertexAttributeBinding};
 use glue::webgl::gltf::GltfLoader;
 use glue::webgl::{ShaderType, WebGlRenderer};
 use rendering::renderer::GameRenderer;
@@ -125,41 +126,60 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         .map_err(|_| String::from("Unable to load mesh"))?;
     log(&format!("{:?}", mesh));
 
-    let mut vertices = vec![
-        Vector3::new(0.0, 0.0, 0.0),
-        Vector3::new(1.0, 0.0, 0.0),
-        Vector3::new(0.0, 1.0, 0.0),
-    ];
+    let window = web_sys::window().ok_or_else(|| String::from("No window object"))?;
 
-    let buffer = Buffer::new(renderer.context().clone(), BufferBinding::ArrayBuffer)
-        .ok_or_else(|| String::from("Unable to create buffer object"))?;
-    buffer.set_data(&mut vertices);
+    let render_frame = move |milliseconds: f64| {
+        program.activate();
 
-    log("Buffers created");
+        renderer.set_viewport();
+        renderer.context().clear_color(0.0, 0.0, 0.0, 1.0);
+        renderer
+            .context()
+            .clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
 
-    let position_binding = VertexAttributeBinding::typed::<Vector3<f32>>(vertices.len());
-    buffer.bind_to_attribute(info.position.index, &position_binding);
+        let projection: Matrix4<f32> = state.camera.projection(renderer.aspect_ratio()).into();
+        let modelview = Matrix4::<f32>::from_angle_y(Rad((milliseconds / 1000.0) as f32))
+            * Matrix4::<f32>::from_angle_x(Rad(0.5))
+            * Matrix4::<f32>::from_angle_z(Rad(0.5))
+            * Matrix4::<f32>::from_scale(0.5);
 
-    program.activate();
+        program.set_uniform_mat4(info.projection.index, projection);
+        program.set_uniform_mat4(info.model_view.index, modelview);
 
-    renderer.set_viewport();
-    renderer.context().clear_color(0.0, 0.0, 0.0, 1.0);
-    renderer
-        .context()
-        .clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+        mesh.draw(&program, &info);
+    };
 
-    let projection: Matrix4<f32> = state.camera.projection(renderer.aspect_ratio()).into();
-    let modelview = Matrix4::<f32>::from_angle_x(Rad(0.5))
-        * Matrix4::<f32>::from_angle_z(Rad(0.5))
-        * Matrix4::<f32>::from_scale(0.5);
+    // TODO: encapsulate this mess.
+    let render_loop: Rc<RefCell<Option<Box<Fn(f64)>>>> = Rc::new(RefCell::new(None));
+    let render_loop_clone = render_loop.clone();
+    let render_loop_cloned_closure: Closure<Fn(f64)> = Closure::new(move |milliseconds: f64| {
+        render_loop_clone
+            .borrow()
+            .as_ref()
+            .map(|func| func(milliseconds));
+    });
+    {
+        let mut render_loop_mut = render_loop.borrow_mut();
+        *render_loop_mut = Some(Box::new(move |milliseconds: f64| {
+            render_frame(milliseconds);
+            let result = web_sys::window()
+                .unwrap()
+                .request_animation_frame(render_loop_cloned_closure.as_ref().unchecked_ref());
+            if result.is_err() {
+                log("Error in window.requestAnimationFrame()");
+            }
+        }));
+    };
 
-    program.set_uniform_mat4(info.projection.index, projection);
-    program.set_uniform_mat4(info.model_view.index, modelview);
+    let closure: Closure<Fn(f64)> = Closure::new(move |milliseconds: f64| {
+        render_loop.borrow().as_ref().map(|func| func(milliseconds));
+    });
 
-    log("Uniforms bound");
+    let _handle = window
+        .request_animation_frame(closure.as_ref().unchecked_ref())
+        .map_err(|_| String::from("Error in window.requestAnimationFrame()"))?;
 
-    //renderer.context() draw_arrays(WebGlRenderingContext::TRIANGLES, 0, vertices.len() as i32);
-    mesh.draw(&program, &info);
+    closure.forget(); // TODO: find a cleaner way to do this.
 
     Ok(())
 }
