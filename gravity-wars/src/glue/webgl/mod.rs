@@ -156,8 +156,8 @@ impl shader::ShaderProgram for ShaderProgram {
         self.context.use_program(Some(&self.program));
     }
 
-    fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>) {
-        let raw: &[f32; 16] = value.as_ref();
+    fn set_uniform_mat4(&self, index: usize, mut value: Matrix4<f32>) {
+        let raw: &mut [f32; 16] = value.as_mut();
         self.context.uniform_matrix4fv_with_f32_array(
             Some(&self.uniforms[index].location),
             false,
@@ -165,8 +165,8 @@ impl shader::ShaderProgram for ShaderProgram {
         );
     }
 
-    fn set_uniform_vec4(&self, index: usize, value: Vector4<f32>) {
-        let raw: &[f32; 4] = value.as_ref();
+    fn set_uniform_vec4(&self, index: usize, mut value: Vector4<f32>) {
+        let raw: &mut [f32; 4] = value.as_mut();
         self.context
             .uniform4fv_with_f32_array(Some(&self.uniforms[index].location), raw);
     }
