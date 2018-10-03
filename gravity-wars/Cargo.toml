@@ -6,6 +6,10 @@ authors = ["Ben Merritt <blm768@gmail.com>"]
 [lib]
 crate-type = ["cdylib"]
 
+[profile.release]
+lto = true
+opt-level = "z"
+
 [dependencies]
 cgmath = "0.16.1"
 gltf = "0.11"

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cgmath::{Matrix4, Vector4};
+use cgmath::{Matrix4, Vector3, Vector4};
 
 #[derive(Clone, Debug)]
 pub struct ShaderParamInfo {
@@ -13,21 +13,26 @@ pub trait ShaderProgram {
 
     fn activate(&self);
     fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>);
+    fn set_uniform_vec3(&self, index: usize, value: Vector3<f32>);
     fn set_uniform_vec4(&self, index: usize, value: Vector4<f32>);
-}
-
-#[derive(Debug)]
-pub struct MaterialShaderInfo {
-    pub position: ShaderParamInfo,
-    pub projection: ShaderParamInfo,
-    pub model_view: ShaderParamInfo,
-    pub base_color: Option<ShaderParamInfo>,
 }
 
 #[derive(Debug)]
 pub enum ShaderInfoError {
     MissingAttribute(String),
     MissingUniform(String),
+}
+
+#[derive(Debug)]
+pub struct MaterialShaderInfo {
+    pub position: ShaderParamInfo,
+    pub normal: ShaderParamInfo,
+
+    pub projection: ShaderParamInfo,
+    pub model_view: ShaderParamInfo,
+    pub base_color: Option<ShaderParamInfo>,
+
+    pub lights: Option<ShaderLightInfo>,
 }
 
 impl MaterialShaderInfo {
@@ -45,9 +50,27 @@ impl MaterialShaderInfo {
 
         Ok(MaterialShaderInfo {
             position: get_attribute("position")?,
+            normal: get_attribute("normal")?,
             projection: get_uniform("projection")?,
             model_view: get_uniform("modelView")?,
             base_color: get_uniform("baseColor").ok(),
+            lights: ShaderLightInfo::from_program(program),
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ShaderLightInfo {
+    pub color: ShaderParamInfo,
+    pub position: ShaderParamInfo,
+}
+
+impl ShaderLightInfo {
+    pub fn from_program(program: &ShaderProgram) -> Option<ShaderLightInfo> {
+        let uniforms = program.uniforms();
+        Some(ShaderLightInfo {
+            color: uniforms.get("light.color")?.clone(),
+            position: uniforms.get("light.position")?.clone(),
         })
     }
 }

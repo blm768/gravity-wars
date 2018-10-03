@@ -5,7 +5,7 @@ use std::io::Cursor;
 use std::rc::Rc;
 use std::str;
 
-use cgmath::{Matrix4, Rad};
+use cgmath::{Matrix4, Rad, Vector3};
 use wasm_bindgen::JsCast;
 use web_sys;
 use web_sys::{Element, HtmlCanvasElement};
@@ -16,8 +16,9 @@ use gltf::Gltf;
 use glue::asset::{AssetData, AssetLoader, FetchError};
 use glue::webgl::gltf::GltfLoader;
 use glue::webgl::{ShaderType, WebGlRenderer};
-use rendering::renderer::GameRenderer;
+use rendering::light::PointLight;
 use rendering::shader::{MaterialShaderInfo, ShaderProgram};
+use rendering::Rgb;
 use state::GameState;
 
 pub mod asset;
@@ -90,10 +91,8 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let state = GameState::new();
 
     let renderer = WebGlRenderer::new(canvas_element, canvas, context);
-    // TODO: just clear the screen here? Do nothing?
-    if let Err(_error) = renderer.render(&state) {
-        log("Rendering error");
-    }
+    renderer.context().enable(WebGlRenderingContext::CULL_FACE);
+    renderer.context().cull_face(WebGlRenderingContext::BACK);
 
     let vertex_shader = compile_shader_from_asset(
         "shaders/vertex.glsl",
@@ -118,13 +117,19 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         .map_err(|_| String::from("Unable to retrieve cube"))?;
     let gltf = Gltf::from_reader(Cursor::new(raw_gltf)).map_err(|e| format!("{:?}", e))?;
     let mut loader = GltfLoader::new(renderer.context().clone(), &gltf);
-    let first_mesh = loader
-        .first_mesh()
+    let first_mesh = gltf
+        .meshes()
+        .next()
         .ok_or_else(|| String::from("Unable to find mesh"))?;
     let mesh = loader
         .load_mesh(&first_mesh)
         .map_err(|_| String::from("Unable to load mesh"))?;
     log(&format!("{:?}", mesh));
+
+    let light = PointLight {
+        color: Rgb::new(1.0, 1.0, 1.0),
+        position: Vector3::new(0.0, 0.0, -3.0),
+    };
 
     let window = web_sys::window().ok_or_else(|| String::from("No window object"))?;
 
@@ -145,6 +150,11 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
 
         program.set_uniform_mat4(info.projection.index, projection);
         program.set_uniform_mat4(info.model_view.index, modelview);
+
+        match info.lights {
+            Some(ref light_info) => light.bind(&program, light_info),
+            None => log("No light info"),
+        }
 
         mesh.draw(&program, &info);
     };

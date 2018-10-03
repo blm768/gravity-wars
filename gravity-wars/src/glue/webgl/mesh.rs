@@ -30,19 +30,22 @@ impl Mesh {
 pub struct Primitive {
     material: Material,
     indices: Option<ElementIndices>,
-    position: VertexAttribute,
+    positions: VertexAttribute,
+    normals: VertexAttribute,
 }
 
 impl Primitive {
     pub fn new(
         material: Material,
         indices: Option<ElementIndices>,
-        position: VertexAttribute,
+        positions: VertexAttribute,
+        normals: VertexAttribute,
     ) -> Result<Primitive, ()> {
         Ok(Primitive {
             material,
             indices,
-            position,
+            positions,
+            normals,
         })
     }
 
@@ -50,9 +53,10 @@ impl Primitive {
     /// The projection and modelview matrix uniforms must already be bound.
     // TODO: break out a separate bind() method?
     pub fn draw(&self, program: &ShaderProgram, info: &MaterialShaderInfo) {
-        let context: &WebGlRenderingContext = self.position.buffer.context();
+        let context: &WebGlRenderingContext = self.positions.buffer.context();
         self.material.set_uniforms(program, info);
-        self.position.bind(info.position.index);
+        self.positions.bind(info.position.index);
+        self.normals.bind(info.normal.index);
         match self.indices {
             Some(ref indices) => {
                 indices.bind();
@@ -66,7 +70,7 @@ impl Primitive {
             None => context.draw_arrays(
                 WebGlRenderingContext::TRIANGLES,
                 0,
-                self.position.binding.count as i32,
+                self.positions.binding.count as i32,
             ),
         }
     }

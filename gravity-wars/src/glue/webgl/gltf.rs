@@ -24,8 +24,8 @@ impl<'a> GltfLoader<'a> {
         GltfLoader { context, gltf }
     }
 
-    pub fn first_mesh(&self) -> Option<gltf::Mesh<'a>> {
-        self.gltf.meshes().next()
+    pub fn gltf(&self) -> &'a Gltf {
+        self.gltf
     }
 
     pub fn load_attribute(&mut self, accessor: &Accessor) -> Result<VertexAttribute, ()> {
@@ -72,12 +72,17 @@ impl<'a> GltfLoader<'a> {
             .attributes()
             .find(|(semantic, _)| *semantic == Semantic::Positions)
             .ok_or(())?;
+        let (_, normal_accessor) = primitive
+            .attributes()
+            .find(|(semantic, _)| *semantic == Semantic::Normals)
+            .ok_or(())?;
         let indices = match primitive.indices() {
             Some(ref accessor) => Some(self.load_indices(accessor)?),
             None => None,
         };
-        let position = self.load_attribute(&pos_accessor)?;
-        Primitive::new(material, indices, position)
+        let positions = self.load_attribute(&pos_accessor)?;
+        let normals = self.load_attribute(&normal_accessor)?;
+        Primitive::new(material, indices, positions, normals)
     }
 
     fn load_buffer(&self, gl_buf: &Buffer, src_buf: &gltf::Buffer) {

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::rc::Rc;
 
-use cgmath::{Matrix4, Vector4};
+use cgmath::{Matrix4, Vector3, Vector4};
 use web_sys::{Element, HtmlCanvasElement};
 use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLocation};
 
@@ -163,6 +163,12 @@ impl shader::ShaderProgram for ShaderProgram {
             false,
             raw,
         );
+    }
+
+    fn set_uniform_vec3(&self, index: usize, mut value: Vector3<f32>) {
+        let raw: &mut [f32; 3] = value.as_mut();
+        self.context
+            .uniform3fv_with_f32_array(Some(&self.uniforms[index].location), raw);
     }
 
     fn set_uniform_vec4(&self, index: usize, mut value: Vector4<f32>) {
