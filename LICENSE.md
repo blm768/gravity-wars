@@ -1,6 +1,6 @@
 # License
 
-This project is licensed under either the [MIT] or [Apache] license, at your option.
+This project is licensed under either the [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) or [MIT](http://opensource.org/licenses/MIT) license, at your option.
 
 ## Third-Party Components
 
