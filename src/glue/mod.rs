@@ -163,10 +163,9 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let render_loop: Rc<RefCell<Option<Box<Fn(f64)>>>> = Rc::new(RefCell::new(None));
     let render_loop_clone = render_loop.clone();
     let render_loop_cloned_closure: Closure<Fn(f64)> = Closure::new(move |milliseconds: f64| {
-        render_loop_clone
-            .borrow()
-            .as_ref()
-            .map(|func| func(milliseconds));
+        if let Some(func) = render_loop_clone.borrow().as_ref() {
+            func(milliseconds);
+        }
     });
     {
         let mut render_loop_mut = render_loop.borrow_mut();
@@ -182,7 +181,9 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     };
 
     let closure: Closure<Fn(f64)> = Closure::new(move |milliseconds: f64| {
-        render_loop.borrow().as_ref().map(|func| func(milliseconds));
+        if let Some(func) = render_loop.borrow().as_ref() {
+            func(milliseconds);
+        }
     });
 
     let _handle = window

@@ -94,7 +94,7 @@ impl<'a> GltfLoader<'a> {
             Source::Uri(_) => &[], // TODO: implement.
         };
         // TODO: remove the copy.
-        gl_buf.set_data(&mut Vec::from(&data[0..src_buf.length()]));
+        gl_buf.set_data(&data[0..src_buf.length()]);
     }
 
     fn load_indices(&mut self, accessor: &Accessor) -> Result<ElementIndices, ()> {
