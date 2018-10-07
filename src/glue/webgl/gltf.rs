@@ -55,6 +55,8 @@ impl<'a> GltfLoader<'a> {
         let pbr = material.pbr_metallic_roughness();
         Ok(Material {
             base_color: from4(pbr.base_color_factor()),
+            metal_factor: pbr.metallic_factor(),
+            roughness: pbr.roughness_factor(),
         })
     }
 

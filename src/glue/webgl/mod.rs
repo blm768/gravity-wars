@@ -54,7 +54,7 @@ pub fn compile_shader(
         Err(context
             .get_shader_info_log(&shader)
             .unwrap_or_else(|| "Unknown error".into()))
-            .map_err(|e| format!("Error compiling shader: {}", e))
+        .map_err(|e| format!("Error compiling shader: {}", e))
     }
 }
 
@@ -154,6 +154,11 @@ impl shader::ShaderProgram for ShaderProgram {
 
     fn activate(&self) {
         self.context.use_program(Some(&self.program));
+    }
+
+    fn set_uniform_f32(&self, index: usize, value: f32) {
+        self.context
+            .uniform1f(Some(&self.uniforms[index].location), value);
     }
 
     fn set_uniform_mat4(&self, index: usize, mut value: Matrix4<f32>) {

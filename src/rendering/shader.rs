@@ -12,6 +12,7 @@ pub trait ShaderProgram {
     fn uniforms(&self) -> HashMap<Box<str>, ShaderParamInfo>;
 
     fn activate(&self);
+    fn set_uniform_f32(&self, index: usize, value: f32);
     fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>);
     fn set_uniform_vec3(&self, index: usize, value: Vector3<f32>);
     fn set_uniform_vec4(&self, index: usize, value: Vector4<f32>);
@@ -31,6 +32,8 @@ pub struct MaterialShaderInfo {
     pub projection: ShaderParamInfo,
     pub model_view: ShaderParamInfo,
     pub base_color: Option<ShaderParamInfo>,
+    pub metal_factor: Option<ShaderParamInfo>,
+    pub roughness: Option<ShaderParamInfo>,
 
     pub lights: Option<ShaderLightInfo>,
 }
@@ -53,7 +56,9 @@ impl MaterialShaderInfo {
             normal: get_attribute("normal")?,
             projection: get_uniform("projection")?,
             model_view: get_uniform("modelView")?,
-            base_color: get_uniform("baseColor").ok(),
+            base_color: get_uniform("material.baseColor").ok(),
+            metal_factor: get_uniform("material.metal").ok(),
+            roughness: get_uniform("material.roughness").ok(),
             lights: ShaderLightInfo::from_program(program),
         })
     }
