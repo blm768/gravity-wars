@@ -15,22 +15,11 @@ pub mod buffer;
 pub mod gltf;
 pub mod mesh;
 
-pub const DEPTH_BUFFER_BIT: i32 = 0x0100;
-pub const STENCIL_BUFFER_BIT: i32 = 0x0400;
-pub const COLOR_BUFFER_BIT: i32 = 0x4000;
-
-pub const VERTEX_SHADER: i32 = 0x8B31;
-pub const FRAGMENT_SHADER: i32 = 0x8B30;
-pub const COMPILE_STATUS: i32 = 0x8B81;
-pub const LINK_STATUS: i32 = 0x8B82;
-pub const ACTIVE_ATTRIBUTES: i32 = 0x8B89;
-pub const ACTIVE_UNIFORMS: i32 = 0x8B86;
-
-#[repr(i32)]
+#[repr(u32)]
 #[derive(Clone, Copy)]
 pub enum ShaderType {
-    Vertex = VERTEX_SHADER,
-    Fragment = FRAGMENT_SHADER,
+    Vertex = WebGlRenderingContext::VERTEX_SHADER,
+    Fragment = WebGlRenderingContext::FRAGMENT_SHADER,
 }
 
 pub fn compile_shader(
