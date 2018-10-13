@@ -55,7 +55,7 @@ pub fn init_game() -> AssetLoader {
     let assets = AssetLoader::new(start_game);
     assets.load("shaders/vertex.glsl");
     assets.load("shaders/fragment.glsl");
-    assets.load("cube.glb");
+    assets.load("assets/meshes/ship.glb");
 
     assets
 }
@@ -113,8 +113,8 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let info = MaterialShaderInfo::from_program(&program).map_err(|e| format!("{:?}", e))?;
 
     let raw_gltf = assets
-        .get("cube.glb")
-        .map_err(|_| String::from("Unable to retrieve cube"))?;
+        .get("assets/meshes/ship.glb")
+        .map_err(|_| String::from("Unable to retrieve mesh asset"))?;
     let gltf = Gltf::from_reader(Cursor::new(raw_gltf)).map_err(|e| format!("{:?}", e))?;
     let mut loader = GltfLoader::new(renderer.context().clone(), &gltf);
     let first_mesh = gltf
@@ -137,7 +137,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         program.activate();
 
         renderer.set_viewport();
-        renderer.context().clear_color(0.0, 0.0, 0.0, 1.0);
+        renderer.context().clear_color(0.5, 0.5, 0.5, 1.0);
         renderer
             .context()
             .clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
