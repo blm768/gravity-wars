@@ -16,11 +16,11 @@ gltf = "0.11"
 rgb = "0.8"
 
 [dependencies.wasm-bindgen]
-version = "0.2.23"
+version = "0.2.24"
 features = ["nightly"]
 
 [dependencies.web-sys]
-version = "0.3.0"
+version = "0.3.2"
 features = [
     "Document",
     "Element",
