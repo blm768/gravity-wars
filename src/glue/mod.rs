@@ -93,6 +93,8 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let renderer = WebGlRenderer::new(canvas_element, canvas, context);
     renderer.context().enable(WebGlRenderingContext::CULL_FACE);
     renderer.context().cull_face(WebGlRenderingContext::BACK);
+    renderer.context().enable(WebGlRenderingContext::DEPTH_TEST);
+    renderer.context().depth_func(WebGlRenderingContext::LESS);
 
     let vertex_shader = compile_shader_from_asset(
         "shaders/vertex.glsl",
@@ -138,15 +140,14 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
 
         renderer.set_viewport();
         renderer.context().clear_color(0.5, 0.5, 0.5, 1.0);
-        renderer
-            .context()
-            .clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+        renderer.context().clear(
+            WebGlRenderingContext::COLOR_BUFFER_BIT | WebGlRenderingContext::DEPTH_BUFFER_BIT,
+        );
 
         let projection: Matrix4<f32> = state.camera.projection(renderer.aspect_ratio()).into();
         let modelview = Matrix4::<f32>::from_angle_y(Rad((milliseconds / 1000.0) as f32))
             * Matrix4::<f32>::from_angle_x(Rad(0.5))
-            * Matrix4::<f32>::from_angle_z(Rad(0.5))
-            * Matrix4::<f32>::from_scale(0.5);
+            * Matrix4::<f32>::from_angle_z(Rad(0.5));
 
         program.set_uniform_mat4(info.projection.index, projection);
         program.set_uniform_mat4(info.model_view.index, modelview);

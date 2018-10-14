@@ -25,8 +25,8 @@ impl Camera {
             right: self.position.x + right,
             top: self.position.y + scale,
             bottom: self.position.y - scale,
-            near: scale,
-            far: -scale,
+            near: -scale,
+            far: scale,
         }
     }
 }
