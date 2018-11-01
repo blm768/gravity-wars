@@ -14,6 +14,11 @@ opt-level = "z"
 cgmath = "0.16.1"
 gltf = "0.11"
 rgb = "0.8"
+specs-derive = "0.3.0"
+
+[dependencies.specs]
+version = "0.14.0"
+default-features = false
 
 [dependencies.wasm-bindgen]
 version = "0.2.27"

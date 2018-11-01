@@ -19,6 +19,7 @@ use glue::webgl::{ShaderType, WebGlRenderer};
 use rendering::light::PointLight;
 use rendering::shader::{MaterialShaderInfo, ShaderProgram};
 use rendering::Rgb;
+use state::mapgen;
 use state::GameState;
 
 pub mod asset;
@@ -88,7 +89,8 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         get_canvas().ok_or_else(|| String::from("Unable to find canvas"))?;
     let context = get_webgl_context(&canvas)?;
 
-    let state = GameState::new();
+    let mut state = GameState::new();
+    mapgen::generate_map(&mut state);
 
     let renderer = WebGlRenderer::new(canvas_element, canvas, context);
     renderer.context().enable(WebGlRenderingContext::CULL_FACE);
@@ -144,7 +146,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
             WebGlRenderingContext::COLOR_BUFFER_BIT | WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
 
-        let projection: Matrix4<f32> = state.camera.projection(renderer.aspect_ratio()).into();
+        let projection: Matrix4<f32> = state.camera().projection(renderer.aspect_ratio()).into();
         let modelview = Matrix4::<f32>::from_angle_y(Rad((milliseconds / 1000.0) as f32))
             * Matrix4::<f32>::from_angle_x(Rad(0.5))
             * Matrix4::<f32>::from_angle_z(Rad(0.5));
