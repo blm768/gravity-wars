@@ -6,7 +6,6 @@ use cgmath::{Matrix4, Vector3, Vector4};
 use web_sys::{Element, HtmlCanvasElement};
 use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLocation};
 
-use glue::log;
 use rendering::buffer::IndexType;
 use rendering::context::RenderingContext;
 use rendering::mesh::ElementIndices;
@@ -258,9 +257,7 @@ impl RenderingContext for WebGlRenderer {
     }
 
     fn draw_indexed_triangles(&self, indices: &ElementIndices<Self>) {
-        log("Binding indices");
         indices.buffer.bind();
-        log("Drawing triangles");
         self.context.draw_elements_with_i32(
             WebGlRenderingContext::TRIANGLES,
             indices.binding.count as i32,
