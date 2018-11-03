@@ -5,22 +5,23 @@ use gltf;
 use gltf::accessor::DataType;
 use gltf::buffer::Source;
 use gltf::{Accessor, Gltf, Semantic};
-use web_sys::WebGlRenderingContext;
 
-use glue::webgl::buffer::{
-    AttributeType, Buffer, BufferBinding, ElementBinding, VertexAttributeBinding,
-};
-use glue::webgl::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
+use rendering::buffer::{AttributeType, Buffer, ElementBinding, VertexAttributeBinding};
+use rendering::context::RenderingContext;
 use rendering::material::Material;
+use rendering::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
 use rendering::Rgba;
 
-pub struct GltfLoader<'a> {
-    context: Rc<WebGlRenderingContext>,
+pub struct GltfLoader<'a, Context: RenderingContext> {
+    context: Rc<Context>,
     gltf: &'a Gltf, // TODO: make sure all input parameters come from this Gltf instance?
 }
 
-impl<'a> GltfLoader<'a> {
-    pub fn new(context: Rc<WebGlRenderingContext>, gltf: &Gltf) -> GltfLoader {
+impl<'a, Context> GltfLoader<'a, Context>
+where
+    Context: RenderingContext,
+{
+    pub fn new(context: Rc<Context>, gltf: &'a Gltf) -> GltfLoader<'a, Context> {
         GltfLoader { context, gltf }
     }
 
@@ -28,12 +29,12 @@ impl<'a> GltfLoader<'a> {
         self.gltf
     }
 
-    pub fn load_attribute(&mut self, accessor: &Accessor) -> Result<VertexAttribute, ()> {
+    pub fn load_attribute(&mut self, accessor: &Accessor) -> Result<VertexAttribute<Context>, ()> {
         if accessor.sparse().is_some() {
             return Err(()); // TODO: support sparse accessors.
         }
 
-        let buffer = Buffer::new(self.context.clone(), BufferBinding::ArrayBuffer).ok_or(())?;
+        let buffer = self.context.make_attribute_buffer()?; // TODO: share these between attributes.
         let view = accessor.view();
         let src_buf = view.buffer();
 
@@ -48,7 +49,7 @@ impl<'a> GltfLoader<'a> {
             count: accessor.count(),
         };
 
-        Ok(VertexAttribute::new(buffer, binding))
+        Ok(VertexAttribute::new(Rc::new(buffer), binding))
     }
 
     pub fn load_material(material: &gltf::Material) -> Result<Material, ()> {
@@ -60,15 +61,18 @@ impl<'a> GltfLoader<'a> {
         })
     }
 
-    pub fn load_mesh(&mut self, mesh: &gltf::Mesh) -> Result<Mesh, ()> {
-        let primitives: Result<Vec<Primitive>, ()> = mesh
+    pub fn load_mesh(&mut self, mesh: &gltf::Mesh) -> Result<Mesh<Context>, ()> {
+        let primitives: Result<Vec<Primitive<Context>>, ()> = mesh
             .primitives()
             .map(|ref p| self.load_primitive(p))
             .collect();
         Ok(Mesh::new(primitives?))
     }
 
-    pub fn load_primitive(&mut self, primitive: &gltf::Primitive) -> Result<Primitive, ()> {
+    pub fn load_primitive(
+        &mut self,
+        primitive: &gltf::Primitive,
+    ) -> Result<Primitive<Context>, ()> {
         let material = Self::load_material(&primitive.material())?;
         let (_, pos_accessor) = primitive
             .attributes()
@@ -87,24 +91,22 @@ impl<'a> GltfLoader<'a> {
         Primitive::new(material, indices, positions, normals)
     }
 
-    fn load_buffer(&self, gl_buf: &Buffer, src_buf: &gltf::Buffer) {
+    fn load_buffer(&self, gl_buf: &Buffer<RenderingContext = Context>, src_buf: &gltf::Buffer) {
         let blob = self.gltf.blob.as_ref();
         let data = match src_buf.source() {
             Source::Bin => blob.map(|vec| &vec[..]).unwrap_or(&[]),
             Source::Uri(_) => &[], // TODO: implement.
         };
-        // TODO: remove the copy.
         gl_buf.set_data(&data[0..src_buf.length()]);
     }
 
-    fn load_indices(&mut self, accessor: &Accessor) -> Result<ElementIndices, ()> {
-        let buffer =
-            Buffer::new(self.context.clone(), BufferBinding::ElementArrayBuffer).ok_or(())?;
+    fn load_indices(&mut self, accessor: &Accessor) -> Result<ElementIndices<Context>, ()> {
+        let buffer = self.context.make_index_buffer()?;
         let view = accessor.view();
         self.load_buffer(&buffer, &view.buffer());
         let attr_type: AttributeType = accessor.data_type().into();
         Ok(ElementIndices::new(
-            buffer,
+            Rc::new(buffer),
             ElementBinding {
                 count: accessor.count(),
                 index_type: attr_type.try_into()?,

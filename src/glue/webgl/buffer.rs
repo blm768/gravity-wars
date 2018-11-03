@@ -1,42 +1,23 @@
-use std::convert::TryFrom;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
-use std::mem;
 use std::rc::Rc;
 use std::slice;
 
-use cgmath::Vector3;
 use web_sys::{WebGlBuffer, WebGlRenderingContext};
 
-#[repr(u32)]
-#[derive(Clone, Copy, Debug)]
-pub enum AttributeType {
-    Byte = WebGlRenderingContext::BYTE,
-    UnsignedByte = WebGlRenderingContext::UNSIGNED_BYTE,
-    Short = WebGlRenderingContext::SHORT,
-    UnsignedShort = WebGlRenderingContext::UNSIGNED_SHORT,
-    Int = WebGlRenderingContext::INT,
-    UnsignedInt = WebGlRenderingContext::UNSIGNED_INT,
-    Float = WebGlRenderingContext::FLOAT,
-}
+use glue::webgl::WebGlRenderer;
+use rendering;
+use rendering::buffer::{AttributeType, VertexAttributeBinding};
 
-#[repr(u32)]
-#[derive(Clone, Copy, Debug)]
-pub enum IndexType {
-    UnsignedByte = WebGlRenderingContext::UNSIGNED_BYTE,
-    UnsignedShort = WebGlRenderingContext::UNSIGNED_SHORT,
-    UnsignedInt = WebGlRenderingContext::UNSIGNED_INT,
-}
-
-impl TryFrom<AttributeType> for IndexType {
-    type Error = ();
-    fn try_from(attr_type: AttributeType) -> Result<Self, ()> {
-        match attr_type {
-            AttributeType::UnsignedByte => Ok(IndexType::UnsignedByte),
-            AttributeType::UnsignedShort => Ok(IndexType::UnsignedShort),
-            AttributeType::UnsignedInt => Ok(IndexType::UnsignedInt),
-            _ => Err(()),
-        }
+fn to_gl_attr_type(attr_type: AttributeType) -> u32 {
+    match attr_type {
+        AttributeType::Byte => WebGlRenderingContext::BYTE,
+        AttributeType::UnsignedByte => WebGlRenderingContext::UNSIGNED_BYTE,
+        AttributeType::Short => WebGlRenderingContext::SHORT,
+        AttributeType::UnsignedShort => WebGlRenderingContext::UNSIGNED_SHORT,
+        AttributeType::Int => WebGlRenderingContext::INT,
+        AttributeType::UnsignedInt => WebGlRenderingContext::UNSIGNED_INT,
+        AttributeType::Float => WebGlRenderingContext::FLOAT,
     }
 }
 
@@ -50,29 +31,9 @@ pub enum BufferUsage {
 
 #[repr(u32)]
 #[derive(Clone, Copy, Debug)]
-pub enum BufferBinding {
+enum BufferBinding {
     ArrayBuffer = WebGlRenderingContext::ARRAY_BUFFER,
     ElementArrayBuffer = WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
-}
-
-pub trait BufferDataItem: Sized {
-    const ATTRIB_TYPE: AttributeType;
-    const ATTRIB_COUNT: usize;
-}
-
-impl BufferDataItem for u8 {
-    const ATTRIB_TYPE: AttributeType = AttributeType::Byte;
-    const ATTRIB_COUNT: usize = 1;
-}
-
-impl BufferDataItem for f32 {
-    const ATTRIB_TYPE: AttributeType = AttributeType::Float;
-    const ATTRIB_COUNT: usize = 1;
-}
-
-impl<T: BufferDataItem> BufferDataItem for Vector3<T> {
-    const ATTRIB_TYPE: AttributeType = <T as BufferDataItem>::ATTRIB_TYPE;
-    const ATTRIB_COUNT: usize = 3;
 }
 
 pub struct Buffer {
@@ -88,7 +49,7 @@ impl Debug for Buffer {
 }
 
 impl Buffer {
-    pub fn new(context: Rc<WebGlRenderingContext>, binding: BufferBinding) -> Option<Buffer> {
+    fn new(context: Rc<WebGlRenderingContext>, binding: BufferBinding) -> Option<Buffer> {
         let buffer = context.create_buffer()?;
         Some(Buffer {
             buffer,
@@ -101,13 +62,16 @@ impl Buffer {
         &self.context
     }
 
-    pub fn set_data<T: BufferDataItem>(&self, data: &[T]) {
+    fn bind(&self) {
+        self.context
+            .bind_buffer(self.binding as u32, Some(&self.buffer));
+    }
+
+    fn set_data(&self, data: &[u8]) {
         self.bind();
         // TODO: this may be quite unsafe...
         // (But I think the mutability is a side effect of the bindings; WebGL shouldn't be mutating anything...)
-        let bytes = unsafe {
-            slice::from_raw_parts_mut(data.as_ptr() as *mut u8, data.len() * mem::size_of::<T>())
-        };
+        let bytes = unsafe { slice::from_raw_parts_mut(data.as_ptr() as *mut u8, data.len()) };
         // TODO: support other hint values.
         self.context.buffer_data_with_u8_array(
             self.binding as u32,
@@ -115,68 +79,67 @@ impl Buffer {
             WebGlRenderingContext::STATIC_DRAW,
         );
     }
+}
 
-    pub fn bind(&self) {
-        self.context
-            .bind_buffer(self.binding as u32, Some(&self.buffer));
+#[derive(Debug)]
+pub struct AttributeBuffer {
+    buffer: Buffer,
+}
+
+impl AttributeBuffer {
+    pub fn new(context: Rc<WebGlRenderingContext>) -> Option<Self> {
+        Some(AttributeBuffer {
+            buffer: Buffer::new(context, BufferBinding::ArrayBuffer)?,
+        })
     }
+}
 
-    // TODO: take a ShaderParamInfo instead of just an index?
-    pub fn bind_to_attribute(&self, index: usize, binding: &VertexAttributeBinding) {
-        self.bind();
-        self.context.vertex_attrib_pointer_with_i32(
+impl rendering::buffer::Buffer for AttributeBuffer {
+    type RenderingContext = WebGlRenderer;
+
+    fn set_data(&self, data: &[u8]) {
+        self.buffer.set_data(data);
+    }
+}
+
+impl rendering::buffer::AttributeBuffer for AttributeBuffer {
+    fn bind_to_attribute(&self, index: usize, binding: &VertexAttributeBinding) {
+        self.buffer.bind();
+        self.buffer.context.vertex_attrib_pointer_with_i32(
             index as u32,
-            binding.num_components as i32, // TODO: use the correct value here...
-            binding.attr_type as u32,
+            binding.num_components as i32,
+            to_gl_attr_type(binding.attr_type),
             binding.normalized,
             binding.stride as i32,
             binding.offset as i32,
         );
-        self.context.enable_vertex_attrib_array(index as u32);
+        self.buffer.context.enable_vertex_attrib_array(index as u32);
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct VertexAttributeBinding {
-    pub attr_type: AttributeType,
-    pub num_components: usize,
-    pub normalized: bool,
-    pub stride: usize,
-    pub offset: usize,
-    pub count: usize,
+#[derive(Debug)]
+pub struct IndexBuffer {
+    buffer: Buffer,
 }
 
-impl VertexAttributeBinding {
-    pub fn typed<T: BufferDataItem>(count: usize) -> VertexAttributeBinding {
-        VertexAttributeBinding {
-            attr_type: T::ATTRIB_TYPE,
-            num_components: T::ATTRIB_COUNT,
-            normalized: false,
-            stride: 0,
-            offset: 0,
-            count,
-        }
+impl IndexBuffer {
+    pub fn new(context: Rc<WebGlRenderingContext>) -> Option<Self> {
+        Some(IndexBuffer {
+            buffer: Buffer::new(context, BufferBinding::ElementArrayBuffer)?,
+        })
     }
 
-    pub fn set_normalized(&mut self, normalized: bool) -> &mut VertexAttributeBinding {
-        self.normalized = normalized;
-        self
-    }
-
-    pub fn set_stride(&mut self, stride: usize) -> &mut VertexAttributeBinding {
-        self.stride = stride;
-        self
-    }
-
-    pub fn set_offset(&mut self, offset: usize) -> &mut VertexAttributeBinding {
-        self.offset = offset;
-        self
+    pub fn bind(&self) {
+        self.buffer.bind();
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct ElementBinding {
-    pub index_type: IndexType,
-    pub count: usize,
-    pub offset: usize,
+impl rendering::buffer::Buffer for IndexBuffer {
+    type RenderingContext = WebGlRenderer;
+
+    fn set_data(&self, data: &[u8]) {
+        self.buffer.set_data(data);
+    }
 }
+
+impl rendering::buffer::IndexBuffer for IndexBuffer {}

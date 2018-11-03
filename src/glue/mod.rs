@@ -14,9 +14,9 @@ use web_sys::{WebGlRenderingContext, WebGlShader};
 use gltf::Gltf;
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
-use glue::webgl::gltf::GltfLoader;
 use glue::webgl::{ShaderType, WebGlRenderer};
 use rendering::light::PointLight;
+use rendering::mesh::gltf::GltfLoader;
 use rendering::shader::{MaterialShaderInfo, ShaderProgram};
 use rendering::Rgb;
 use state::mapgen;
@@ -92,7 +92,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let mut state = GameState::new();
     mapgen::generate_map(&mut state);
 
-    let renderer = WebGlRenderer::new(canvas_element, canvas, context);
+    let renderer = Rc::new(WebGlRenderer::new(canvas_element, canvas, context));
     renderer.context().enable(WebGlRenderingContext::CULL_FACE);
     renderer.context().cull_face(WebGlRenderingContext::BACK);
     renderer.context().enable(WebGlRenderingContext::DEPTH_TEST);
@@ -120,7 +120,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         .get("assets/meshes/ship.glb")
         .map_err(|_| String::from("Unable to retrieve mesh asset"))?;
     let gltf = Gltf::from_reader(Cursor::new(raw_gltf)).map_err(|e| format!("{:?}", e))?;
-    let mut loader = GltfLoader::new(renderer.context().clone(), &gltf);
+    let mut loader = GltfLoader::new(renderer.clone(), &gltf);
     let first_mesh = gltf
         .meshes()
         .next()
@@ -128,7 +128,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let mesh = loader
         .load_mesh(&first_mesh)
         .map_err(|_| String::from("Unable to load mesh"))?;
-    log(&format!("{:?}", mesh));
+    //log(&format!("{:?}", mesh));
 
     let light = PointLight {
         color: Rgb::new(1.0, 1.0, 1.0),
@@ -159,7 +159,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
             None => log("No light info"),
         }
 
-        mesh.draw(&program, &info);
+        mesh.draw(&renderer, &program, &info);
     };
 
     // TODO: encapsulate this mess.

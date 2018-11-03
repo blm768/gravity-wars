@@ -6,14 +6,16 @@ use cgmath::{Matrix4, Vector3, Vector4};
 use web_sys::{Element, HtmlCanvasElement};
 use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLocation};
 
+use glue::log;
+use rendering::buffer::IndexType;
+use rendering::context::RenderingContext;
+use rendering::mesh::ElementIndices;
 use rendering::renderer::GameRenderer;
 use rendering::shader;
 use rendering::shader::ShaderParamInfo;
 use state::GameState;
 
 pub mod buffer;
-pub mod gltf;
-pub mod mesh;
 
 #[repr(u32)]
 #[derive(Clone, Copy)]
@@ -227,5 +229,43 @@ impl GameRenderer for WebGlRenderer {
         self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
 
         Ok(())
+    }
+}
+
+fn to_gl_element_type(attr_type: IndexType) -> u32 {
+    match attr_type {
+        IndexType::UnsignedByte => WebGlRenderingContext::UNSIGNED_BYTE,
+        IndexType::UnsignedShort => WebGlRenderingContext::UNSIGNED_SHORT,
+        IndexType::UnsignedInt => WebGlRenderingContext::UNSIGNED_INT,
+    }
+}
+
+impl RenderingContext for WebGlRenderer {
+    type AttributeBuffer = buffer::AttributeBuffer;
+    type IndexBuffer = buffer::IndexBuffer;
+
+    fn make_attribute_buffer(&self) -> Result<Self::AttributeBuffer, ()> {
+        Self::AttributeBuffer::new(self.context.clone()).ok_or(())
+    }
+
+    fn make_index_buffer(&self) -> Result<Self::IndexBuffer, ()> {
+        Self::IndexBuffer::new(self.context.clone()).ok_or(())
+    }
+
+    fn draw_triangles(&self, count: usize) {
+        self.context
+            .draw_arrays(WebGlRenderingContext::TRIANGLES, 0, count as i32);
+    }
+
+    fn draw_indexed_triangles(&self, indices: &ElementIndices<Self>) {
+        log("Binding indices");
+        indices.buffer.bind();
+        log("Drawing triangles");
+        self.context.draw_elements_with_i32(
+            WebGlRenderingContext::TRIANGLES,
+            indices.binding.count as i32,
+            to_gl_element_type(indices.binding.index_type),
+            indices.binding.offset as i32,
+        );
     }
 }
