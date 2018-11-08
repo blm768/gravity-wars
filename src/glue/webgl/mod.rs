@@ -48,11 +48,13 @@ pub fn compile_shader(
     }
 }
 
+#[derive(Debug)]
 struct ShaderUniformInformation {
     name: Box<str>,
     location: WebGlUniformLocation,
 }
 
+#[derive(Debug)]
 pub struct ShaderProgram {
     program: WebGlProgram,
     context: Rc<WebGlRenderingContext>,

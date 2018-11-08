@@ -16,8 +16,8 @@ use gltf::Gltf;
 use glue::asset::{AssetData, AssetLoader, FetchError};
 use glue::webgl::{ShaderType, WebGlRenderer};
 use rendering::light::PointLight;
+use rendering::material::MaterialShader;
 use rendering::mesh::gltf::GltfLoader;
-use rendering::shader::{MaterialShaderInfo, ShaderProgram};
 use rendering::Rgb;
 use state::mapgen;
 use state::GameState;
@@ -114,7 +114,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         renderer.context().clone(),
         [vertex_shader, fragment_shader].iter(),
     )?;
-    let info = MaterialShaderInfo::from_program(&program).map_err(|e| format!("{:?}", e))?;
+    let mat_shader = MaterialShader::new(Box::new(program)).map_err(|e| format!("{:?}", e))?;
 
     let raw_gltf = assets
         .get("assets/meshes/ship.glb")
@@ -138,7 +138,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let window = web_sys::window().ok_or_else(|| String::from("No window object"))?;
 
     let render_frame = move |milliseconds: f64| {
-        program.activate();
+        mat_shader.program.activate();
 
         renderer.set_viewport();
         renderer.context().clear_color(0.5, 0.5, 0.5, 1.0);
@@ -151,15 +151,16 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
             * Matrix4::<f32>::from_angle_x(Rad(0.5))
             * Matrix4::<f32>::from_angle_z(Rad(0.5));
 
-        program.set_uniform_mat4(info.projection.index, projection);
-        program.set_uniform_mat4(info.model_view.index, modelview);
+        mat_shader
+            .program
+            .set_uniform_mat4(mat_shader.info.projection.index, projection);
+        mat_shader
+            .program
+            .set_uniform_mat4(mat_shader.info.model_view.index, modelview);
 
-        match info.lights {
-            Some(ref light_info) => light.bind(&program, light_info),
-            None => log("No light info"),
-        }
+        mat_shader.bind_light(&light);
 
-        mesh.draw(&renderer, &program, &info);
+        mesh.draw(&renderer, &mat_shader);
     };
 
     // TODO: encapsulate this mess.

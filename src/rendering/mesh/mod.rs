@@ -2,8 +2,7 @@ use std::rc::Rc;
 
 use rendering::buffer::{AttributeBuffer, ElementBinding, VertexAttributeBinding};
 use rendering::context::RenderingContext;
-use rendering::material::Material;
-use rendering::shader::{MaterialShaderInfo, ShaderProgram};
+use rendering::material::{Material, MaterialShader};
 
 pub mod gltf;
 
@@ -21,9 +20,9 @@ impl<Context: RenderingContext> Mesh<Context> {
         &self.primitives
     }
 
-    pub fn draw(&self, context: &Context, program: &ShaderProgram, info: &MaterialShaderInfo) {
+    pub fn draw(&self, context: &Context, mat_shader: &MaterialShader) {
         for p in self.primitives.iter() {
-            p.draw(context, program, info);
+            p.draw(context, mat_shader);
         }
     }
 }
@@ -54,10 +53,10 @@ impl<Context: RenderingContext> Primitive<Context> {
     /// Binds each primitive's buffers and makes the appropriate WebGL draw calls.
     /// The projection and modelview matrix uniforms must already be bound.
     // TODO: break out a separate bind() method?
-    pub fn draw(&self, context: &Context, program: &ShaderProgram, info: &MaterialShaderInfo) {
-        self.material.set_uniforms(program, info);
-        self.positions.bind(info.position.index);
-        self.normals.bind(info.normal.index);
+    pub fn draw(&self, context: &Context, mat_shader: &MaterialShader) {
+        mat_shader.bind_material(&self.material);
+        self.positions.bind(mat_shader.info.position.index);
+        self.normals.bind(mat_shader.info.normal.index);
         match self.indices {
             Some(ref indices) => context.draw_indexed_triangles(indices),
             None => context.draw_triangles(self.positions.binding.count),
