@@ -14,7 +14,8 @@ use web_sys::{WebGlRenderingContext, WebGlShader};
 use gltf::Gltf;
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
-use glue::webgl::{ShaderType, WebGlRenderer};
+use glue::webgl::game_renderer::WebGlRenderer;
+use glue::webgl::{ShaderType, WebGlContext};
 use rendering::light::PointLight;
 use rendering::material::MaterialShader;
 use rendering::mesh::gltf::GltfLoader;
@@ -70,7 +71,7 @@ fn compile_shader_from_asset(
     match asset {
         Ok(ref data) => {
             let text = str::from_utf8(data).unwrap_or("<UTF-8 decoding error>");
-            webgl::compile_shader(renderer.context(), shader_type, text)
+            webgl::compile_shader(renderer.gl_context(), shader_type, text)
         }
         Err(error) => Err(format!("Unable to load asset {}: {}", url, error)),
     }
@@ -87,17 +88,14 @@ pub fn start_game(assets: &AssetData) {
 fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let (canvas_element, canvas) =
         get_canvas().ok_or_else(|| String::from("Unable to find canvas"))?;
-    let context = get_webgl_context(&canvas)?;
+    let gl_context = get_webgl_context(&canvas)?;
+    let context = WebGlContext::new(canvas_element, canvas, gl_context);
 
     let mut state = GameState::new();
     mapgen::generate_map(&mut state);
 
-    let renderer = Rc::new(WebGlRenderer::new(canvas_element, canvas, context));
-    renderer.context().enable(WebGlRenderingContext::CULL_FACE);
-    renderer.context().cull_face(WebGlRenderingContext::BACK);
-    renderer.context().enable(WebGlRenderingContext::DEPTH_TEST);
-    renderer.context().depth_func(WebGlRenderingContext::LESS);
-
+    let renderer = WebGlRenderer::new(context);
+    renderer.configure_context();
     let vertex_shader = compile_shader_from_asset(
         "shaders/vertex.glsl",
         assets.get("shaders/vertex.glsl"),
@@ -111,7 +109,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         ShaderType::Fragment,
     )?;
     let program = webgl::ShaderProgram::link(
-        renderer.context().clone(),
+        renderer.gl_context().clone(),
         [vertex_shader, fragment_shader].iter(),
     )?;
     let mat_shader = MaterialShader::new(Box::new(program)).map_err(|e| format!("{:?}", e))?;
@@ -120,7 +118,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
         .get("assets/meshes/ship.glb")
         .map_err(|_| String::from("Unable to retrieve mesh asset"))?;
     let gltf = Gltf::from_reader(Cursor::new(raw_gltf)).map_err(|e| format!("{:?}", e))?;
-    let mut loader = GltfLoader::new(renderer.clone(), &gltf);
+    let mut loader = GltfLoader::new(Rc::clone(renderer.context()), &gltf);
     let first_mesh = gltf
         .meshes()
         .next()
@@ -140,13 +138,16 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let render_frame = move |milliseconds: f64| {
         mat_shader.program.activate();
 
-        renderer.set_viewport();
-        renderer.context().clear_color(0.5, 0.5, 0.5, 1.0);
-        renderer.context().clear(
+        renderer.context().set_viewport();
+        renderer.gl_context().clear_color(0.5, 0.5, 0.5, 1.0);
+        renderer.gl_context().clear(
             WebGlRenderingContext::COLOR_BUFFER_BIT | WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
 
-        let projection: Matrix4<f32> = state.camera().projection(renderer.aspect_ratio()).into();
+        let projection: Matrix4<f32> = state
+            .camera()
+            .projection(renderer.context().aspect_ratio())
+            .into();
         let modelview = Matrix4::<f32>::from_angle_y(Rad((milliseconds / 1000.0) as f32))
             * Matrix4::<f32>::from_angle_x(Rad(0.5))
             * Matrix4::<f32>::from_angle_z(Rad(0.5));
@@ -160,7 +161,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
 
         mat_shader.bind_light(&light);
 
-        mesh.draw(&renderer, &mat_shader);
+        mesh.draw(renderer.context(), &mat_shader);
     };
 
     // TODO: encapsulate this mess.

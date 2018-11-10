@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::rc::Rc;
 
 use cgmath::{Matrix4, Vector3, Vector4};
@@ -9,12 +8,11 @@ use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLoca
 use rendering::buffer::IndexType;
 use rendering::context::RenderingContext;
 use rendering::mesh::ElementIndices;
-use rendering::renderer::GameRenderer;
 use rendering::shader;
 use rendering::shader::ShaderParamInfo;
-use state::GameState;
 
 pub mod buffer;
+pub mod game_renderer;
 
 #[repr(u32)]
 #[derive(Clone, Copy)]
@@ -175,31 +173,32 @@ impl shader::ShaderProgram for ShaderProgram {
     }
 }
 
-pub struct WebGlRenderer {
+pub struct WebGlContext {
     canvas_element: Element,
     canvas: HtmlCanvasElement,
-    context: Rc<WebGlRenderingContext>,
+    gl_context: Rc<WebGlRenderingContext>,
 }
 
-impl WebGlRenderer {
+impl WebGlContext {
     pub fn new(
         canvas_element: Element,
         canvas: HtmlCanvasElement,
-        context: WebGlRenderingContext,
-    ) -> WebGlRenderer {
-        WebGlRenderer {
+        gl_context: WebGlRenderingContext,
+    ) -> WebGlContext {
+        WebGlContext {
             canvas_element,
             canvas,
-            context: Rc::new(context),
+            gl_context: Rc::new(gl_context),
         }
     }
 
-    pub fn context(&self) -> &Rc<WebGlRenderingContext> {
-        &self.context
+    pub fn gl_context(&self) -> &Rc<WebGlRenderingContext> {
+        &self.gl_context
     }
 
     pub fn aspect_ratio(&self) -> f32 {
-        self.context.drawing_buffer_width() as f32 / self.context.drawing_buffer_height() as f32
+        self.gl_context.drawing_buffer_width() as f32
+            / self.gl_context.drawing_buffer_height() as f32
     }
 
     pub fn set_viewport(&self) {
@@ -215,21 +214,12 @@ impl WebGlRenderer {
             self.canvas.set_height(height);
         }
 
-        self.context.viewport(
+        self.gl_context.viewport(
             0,
             0,
-            self.context.drawing_buffer_width(),
-            self.context.drawing_buffer_height(),
+            self.gl_context.drawing_buffer_width(),
+            self.gl_context.drawing_buffer_height(),
         );
-    }
-}
-
-impl GameRenderer for WebGlRenderer {
-    fn render(&self, _state: &GameState) -> Result<(), Box<Error>> {
-        self.context.clear_color(0.0, 0.0, 0.0, 1.0);
-        self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
-
-        Ok(())
     }
 }
 
@@ -241,26 +231,26 @@ fn to_gl_element_type(attr_type: IndexType) -> u32 {
     }
 }
 
-impl RenderingContext for WebGlRenderer {
+impl RenderingContext for WebGlContext {
     type AttributeBuffer = buffer::AttributeBuffer;
     type IndexBuffer = buffer::IndexBuffer;
 
     fn make_attribute_buffer(&self) -> Result<Self::AttributeBuffer, ()> {
-        Self::AttributeBuffer::new(self.context.clone()).ok_or(())
+        Self::AttributeBuffer::new(self.gl_context.clone()).ok_or(())
     }
 
     fn make_index_buffer(&self) -> Result<Self::IndexBuffer, ()> {
-        Self::IndexBuffer::new(self.context.clone()).ok_or(())
+        Self::IndexBuffer::new(self.gl_context.clone()).ok_or(())
     }
 
     fn draw_triangles(&self, count: usize) {
-        self.context
+        self.gl_context
             .draw_arrays(WebGlRenderingContext::TRIANGLES, 0, count as i32);
     }
 
     fn draw_indexed_triangles(&self, indices: &ElementIndices<Self>) {
         indices.buffer.bind();
-        self.context.draw_elements_with_i32(
+        self.gl_context.draw_elements_with_i32(
             WebGlRenderingContext::TRIANGLES,
             indices.binding.count as i32,
             to_gl_element_type(indices.binding.index_type),

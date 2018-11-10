@@ -5,7 +5,7 @@ use std::slice;
 
 use web_sys::{WebGlBuffer, WebGlRenderingContext};
 
-use glue::webgl::WebGlRenderer;
+use glue::webgl::WebGlContext;
 use rendering;
 use rendering::buffer::{AttributeType, VertexAttributeBinding};
 
@@ -95,7 +95,7 @@ impl AttributeBuffer {
 }
 
 impl rendering::buffer::Buffer for AttributeBuffer {
-    type RenderingContext = WebGlRenderer;
+    type RenderingContext = WebGlContext;
 
     fn set_data(&self, data: &[u8]) {
         self.buffer.set_data(data);
@@ -135,7 +135,7 @@ impl IndexBuffer {
 }
 
 impl rendering::buffer::Buffer for IndexBuffer {
-    type RenderingContext = WebGlRenderer;
+    type RenderingContext = WebGlContext;
 
     fn set_data(&self, data: &[u8]) {
         self.buffer.set_data(data);
