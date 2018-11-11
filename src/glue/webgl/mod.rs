@@ -173,6 +173,7 @@ impl shader::ShaderProgram for ShaderProgram {
     }
 }
 
+#[derive(Debug)]
 pub struct WebGlContext {
     canvas_element: Element,
     canvas: HtmlCanvasElement,

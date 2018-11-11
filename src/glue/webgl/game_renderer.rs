@@ -1,20 +1,25 @@
 use std::error::Error;
 use std::rc::Rc;
 
+use cgmath::Matrix4;
 use web_sys::WebGlRenderingContext;
 
 use glue::webgl::WebGlContext;
+use rendering::material::MaterialShader;
 use state::GameState;
 use state_renderer::GameRenderer;
 
+#[derive(Debug)]
 pub struct WebGlRenderer {
     context: Rc<WebGlContext>,
+    material_shader: MaterialShader,
 }
 
 impl WebGlRenderer {
-    pub fn new(context: WebGlContext) -> WebGlRenderer {
+    pub fn new(context: Rc<WebGlContext>, material_shader: MaterialShader) -> WebGlRenderer {
         WebGlRenderer {
-            context: Rc::new(context),
+            context,
+            material_shader,
         }
     }
 
@@ -35,10 +40,43 @@ impl WebGlRenderer {
 }
 
 impl GameRenderer for WebGlRenderer {
-    fn render(&self, _state: &GameState) -> Result<(), Box<Error>> {
+    type Context = WebGlContext;
+
+    fn context(&self) -> &Self::Context {
+        &self.context
+    }
+
+    fn material_shader(&self) -> &MaterialShader {
+        &self.material_shader
+    }
+
+    fn render(&self, state: &GameState) -> Result<(), Box<Error>> {
+        let mat_shader = &self.material_shader;
+
+        mat_shader.program.activate();
+
+        self.context.set_viewport();
         self.gl_context().clear_color(0.0, 0.0, 0.0, 1.0);
-        self.gl_context()
-            .clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+        self.gl_context().clear(
+            WebGlRenderingContext::COLOR_BUFFER_BIT | WebGlRenderingContext::DEPTH_BUFFER_BIT,
+        );
+
+        let projection: Matrix4<f32> = state
+            .camera()
+            .projection(self.context.aspect_ratio())
+            .into();
+
+        mat_shader
+            .program
+            .set_uniform_mat4(mat_shader.info.projection.index, projection);
+
+        mat_shader.bind_light(&state.light);
+
+        for entity in state.iter_entities() {
+            if let Some(ref renderer) = entity.renderer {
+                renderer.render(entity);
+            }
+        }
 
         Ok(())
     }

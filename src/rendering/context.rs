@@ -1,7 +1,9 @@
+use std::fmt::Debug;
+
 use rendering::buffer;
 use rendering::mesh::ElementIndices;
 
-pub trait RenderingContext {
+pub trait RenderingContext: Debug {
     type AttributeBuffer: buffer::AttributeBuffer<RenderingContext = Self> + 'static;
     type IndexBuffer: buffer::IndexBuffer<RenderingContext = Self> + 'static;
 

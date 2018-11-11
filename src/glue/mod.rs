@@ -5,7 +5,6 @@ use std::io::Cursor;
 use std::rc::Rc;
 use std::str;
 
-use cgmath::{Matrix4, Rad, Vector3};
 use wasm_bindgen::JsCast;
 use web_sys;
 use web_sys::{Element, HtmlCanvasElement};
@@ -16,12 +15,11 @@ use gltf::Gltf;
 use glue::asset::{AssetData, AssetLoader, FetchError};
 use glue::webgl::game_renderer::WebGlRenderer;
 use glue::webgl::{ShaderType, WebGlContext};
-use rendering::light::PointLight;
 use rendering::material::MaterialShader;
 use rendering::mesh::gltf::GltfLoader;
-use rendering::Rgb;
 use state::mapgen;
 use state::GameState;
+use state_renderer::{GameRenderer, MeshRenderer};
 
 pub mod asset;
 pub mod webgl;
@@ -65,13 +63,13 @@ pub fn init_game() -> AssetLoader {
 fn compile_shader_from_asset(
     url: &str,
     asset: Result<&[u8], FetchError>,
-    renderer: &WebGlRenderer,
+    context: &WebGlRenderingContext,
     shader_type: ShaderType,
 ) -> Result<WebGlShader, String> {
     match asset {
         Ok(ref data) => {
             let text = str::from_utf8(data).unwrap_or("<UTF-8 decoding error>");
-            webgl::compile_shader(renderer.gl_context(), shader_type, text)
+            webgl::compile_shader(context, shader_type, text)
         }
         Err(error) => Err(format!("Unable to load asset {}: {}", url, error)),
     }
@@ -89,30 +87,31 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let (canvas_element, canvas) =
         get_canvas().ok_or_else(|| String::from("Unable to find canvas"))?;
     let gl_context = get_webgl_context(&canvas)?;
-    let context = WebGlContext::new(canvas_element, canvas, gl_context);
+    let context = Rc::new(WebGlContext::new(canvas_element, canvas, gl_context));
 
     let mut state = GameState::new();
     mapgen::generate_map(&mut state);
 
-    let renderer = WebGlRenderer::new(context);
-    renderer.configure_context();
     let vertex_shader = compile_shader_from_asset(
         "shaders/vertex.glsl",
         assets.get("shaders/vertex.glsl"),
-        &renderer,
+        context.gl_context(),
         ShaderType::Vertex,
     )?;
     let fragment_shader = compile_shader_from_asset(
         "shaders/fragment.glsl",
         assets.get("shaders/fragment.glsl"),
-        &renderer,
+        context.gl_context(),
         ShaderType::Fragment,
     )?;
     let program = webgl::ShaderProgram::link(
-        renderer.gl_context().clone(),
+        context.gl_context().clone(),
         [vertex_shader, fragment_shader].iter(),
     )?;
     let mat_shader = MaterialShader::new(Box::new(program)).map_err(|e| format!("{:?}", e))?;
+
+    let renderer = Rc::new(WebGlRenderer::new(Rc::clone(&context), mat_shader));
+    renderer.configure_context();
 
     let raw_gltf = assets
         .get("assets/meshes/ship.glb")
@@ -126,42 +125,19 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     let mesh = loader
         .load_mesh(&first_mesh)
         .map_err(|_| String::from("Unable to load mesh"))?;
-    //log(&format!("{:?}", mesh));
+    let ship_renderer = Rc::new(MeshRenderer::new(
+        Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
+        mesh,
+    ));
 
-    let light = PointLight {
-        color: Rgb::new(1.0, 1.0, 1.0),
-        position: Vector3::new(0.0, 0.0, -3.0),
-    };
+    mapgen::add_ships(&mut state, ship_renderer);
 
     let window = web_sys::window().ok_or_else(|| String::from("No window object"))?;
 
-    let render_frame = move |milliseconds: f64| {
-        mat_shader.program.activate();
-
-        renderer.context().set_viewport();
-        renderer.gl_context().clear_color(0.5, 0.5, 0.5, 1.0);
-        renderer.gl_context().clear(
-            WebGlRenderingContext::COLOR_BUFFER_BIT | WebGlRenderingContext::DEPTH_BUFFER_BIT,
-        );
-
-        let projection: Matrix4<f32> = state
-            .camera()
-            .projection(renderer.context().aspect_ratio())
-            .into();
-        let modelview = Matrix4::<f32>::from_angle_y(Rad((milliseconds / 1000.0) as f32))
-            * Matrix4::<f32>::from_angle_x(Rad(0.5))
-            * Matrix4::<f32>::from_angle_z(Rad(0.5));
-
-        mat_shader
-            .program
-            .set_uniform_mat4(mat_shader.info.projection.index, projection);
-        mat_shader
-            .program
-            .set_uniform_mat4(mat_shader.info.model_view.index, modelview);
-
-        mat_shader.bind_light(&light);
-
-        mesh.draw(renderer.context(), &mat_shader);
+    let render_frame = move |_milliseconds: f64| {
+        renderer
+            .render(&state)
+            .unwrap_or_else(|e| log(&e.to_string()));
     };
 
     // TODO: encapsulate this mess.

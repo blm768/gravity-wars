@@ -1,20 +1,22 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use cgmath::Vector2;
+use cgmath::Vector3;
 
+use rendering::light::PointLight;
 use rendering::scene::Camera;
+use rendering::Rgb;
 
 pub mod mapgen;
 
 #[derive(Debug)]
 pub struct Entity {
-    pub position: Vector2<f32>,
+    pub position: Vector3<f32>,
     pub renderer: Option<Rc<EntityRenderer>>,
 }
 
 impl Entity {
-    pub fn new(position: Vector2<f32>) -> Entity {
+    pub fn new(position: Vector3<f32>) -> Entity {
         Entity {
             position,
             renderer: None,
@@ -29,13 +31,20 @@ pub trait EntityRenderer: Debug {
 pub struct GameState {
     pub entities: Vec<Entity>,
     pub camera: Camera,
+    pub light: PointLight,
 }
 
 impl GameState {
     pub fn new() -> GameState {
+        let light = PointLight {
+            color: Rgb::new(1.0, 1.0, 1.0),
+            position: Vector3::new(0.0, 0.0, -3.0),
+        };
+
         GameState {
             entities: Vec::new(),
             camera: Camera::new(),
+            light,
         }
     }
 
