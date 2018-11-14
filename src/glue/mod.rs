@@ -1,6 +1,5 @@
 use wasm_bindgen::prelude::*;
 
-use std::cell::RefCell;
 use std::io::Cursor;
 use std::rc::Rc;
 use std::str;
@@ -13,6 +12,7 @@ use web_sys::{WebGlRenderingContext, WebGlShader};
 use gltf::Gltf;
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
+use glue::callback::AnimationFrameCallback;
 use glue::webgl::game_renderer::WebGlRenderer;
 use glue::webgl::{ShaderType, WebGlContext};
 use rendering::material::MaterialShader;
@@ -22,6 +22,7 @@ use state::GameState;
 use state_renderer::{GameRenderer, MeshRenderer};
 
 pub mod asset;
+pub mod callback;
 pub mod webgl;
 
 #[wasm_bindgen]
@@ -132,46 +133,17 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
 
     mapgen::add_ships(&mut state, ship_renderer);
 
-    let window = web_sys::window().ok_or_else(|| String::from("No window object"))?;
-
     let render_frame = move |_milliseconds: f64| {
         renderer
             .render(&state)
             .unwrap_or_else(|e| log(&e.to_string()));
     };
 
-    // TODO: encapsulate this mess.
-    let render_loop: Rc<RefCell<Option<Box<Fn(f64)>>>> = Rc::new(RefCell::new(None));
-    let render_loop_clone = render_loop.clone();
-    let render_loop_cloned_closure: Closure<Fn(f64)> = Closure::new(move |milliseconds: f64| {
-        if let Some(func) = render_loop_clone.borrow().as_ref() {
-            func(milliseconds);
-        }
-    });
-    {
-        let mut render_loop_mut = render_loop.borrow_mut();
-        *render_loop_mut = Some(Box::new(move |milliseconds: f64| {
-            render_frame(milliseconds);
-            let result = web_sys::window()
-                .unwrap()
-                .request_animation_frame(render_loop_cloned_closure.as_ref().unchecked_ref());
-            if result.is_err() {
-                log("Error in window.requestAnimationFrame()");
-            }
-        }));
-    };
-
-    let closure: Closure<Fn(f64)> = Closure::new(move |milliseconds: f64| {
-        if let Some(func) = render_loop.borrow().as_ref() {
-            func(milliseconds);
-        }
-    });
-
-    let _handle = window
-        .request_animation_frame(closure.as_ref().unchecked_ref())
-        .map_err(|_| String::from("Error in window.requestAnimationFrame()"))?;
-
-    closure.forget(); // TODO: find a cleaner way to do this.
+    let mut render_callback = AnimationFrameCallback::new(render_frame);
+    render_callback
+        .start()
+        .map_err(|_| String::from("Unable to start render loop"))?;
+    render_callback.forget();
 
     Ok(())
 }
