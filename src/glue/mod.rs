@@ -140,9 +140,7 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
     };
 
     let mut render_callback = AnimationFrameCallback::new(render_frame);
-    render_callback
-        .start()
-        .map_err(|_| String::from("Unable to start render loop"))?;
+    render_callback.start()?;
     render_callback.forget();
 
     Ok(())

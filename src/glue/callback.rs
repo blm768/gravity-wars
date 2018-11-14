@@ -1,15 +1,13 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use web_sys;
 
-use glue::log;
-
 pub struct AnimationFrameCallback {
     closure: Closure<Fn(f64)>,
-    callback_handle: Option<i32>,
+    callback_handle: Rc<Cell<Option<i32>>>,
 }
 
 impl AnimationFrameCallback {
@@ -28,16 +26,18 @@ impl AnimationFrameCallback {
             }
         });
 
+        // Make shared storage to hold the most recent handle returned from requestAnimationFrame.
+        let shared_handle: Rc<Cell<Option<i32>>> = Rc::new(Cell::new(None));
+        let handle_copy = Rc::clone(&shared_handle);
+
         // Now we actually define the self-referential closure.
         let callback_loop = move |milliseconds: f64| {
             callback(milliseconds);
-            // TODO: stash handle for future use.
-            let result = web_sys::window()
+            let next_handle = web_sys::window()
                 .unwrap()
-                .request_animation_frame(loop_closure.as_ref().unchecked_ref());
-            if result.is_err() {
-                log("Error in window.requestAnimationFrame()"); // TODO: don't log; just return an error.
-            }
+                .request_animation_frame(loop_closure.as_ref().unchecked_ref())
+                .ok(); // NOTE: if requestAnimationFrame fails, the loop will stop silently.
+            handle_copy.set(next_handle);
         };
         *shared_loop.borrow_mut() = Some(Box::new(callback_loop));
 
@@ -49,21 +49,33 @@ impl AnimationFrameCallback {
 
         AnimationFrameCallback {
             closure: outer_closure,
-            callback_handle: None,
+            callback_handle: shared_handle,
         }
     }
 
     pub fn start(&mut self) -> Result<(), String> {
-        if self.callback_handle.is_some() {
-            return Ok(()); // TODO: return error instead?
+        if self.is_running() {
+            return Ok(());
         }
-        // TODO: don't start if we're already started.
         let handle = web_sys::window()
             .unwrap()
             .request_animation_frame(self.closure.as_ref().unchecked_ref())
             .map_err(|_| String::from("Error in window.requestAnimationFrame()"))?;
-        self.callback_handle = Some(handle);
+        self.callback_handle.set(Some(handle));
         Ok(())
+    }
+
+    pub fn stop(&mut self) {
+        if let Some(handle) = self.callback_handle.get() {
+            web_sys::window()
+                .unwrap()
+                .cancel_animation_frame(handle)
+                .unwrap_or(());
+        }
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.callback_handle.get().is_some()
     }
 
     pub fn forget(self) {
