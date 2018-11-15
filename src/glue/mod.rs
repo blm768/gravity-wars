@@ -4,6 +4,7 @@ use std::io::Cursor;
 use std::rc::Rc;
 use std::str;
 
+use js_sys::Promise;
 use wasm_bindgen::JsCast;
 use web_sys;
 use web_sys::{Element, HtmlCanvasElement};
@@ -52,8 +53,8 @@ pub fn get_webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGlRenderingCon
 }
 
 #[wasm_bindgen]
-pub fn init_game() -> AssetLoader {
-    let assets = AssetLoader::new(start_game);
+pub fn load_assets() -> Promise {
+    let assets = AssetLoader::new();
     assets.load("shaders/vertex.glsl");
     assets.load("shaders/fragment.glsl");
     assets.load("assets/meshes/ship.glb");

@@ -3,9 +3,9 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Display;
-use std::mem;
 use std::rc::Rc;
 
+use futures::{Async, Future, Poll};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -105,27 +105,27 @@ impl WasmFetchResult {
 struct AssetLoaderData {
     pending: HashMap<Box<str>, FetchCallback>,
     resolved: HashMap<Box<str>, FetchResult>,
-    on_complete: Box<Fn(&AssetData)>,
 }
 
 impl AssetLoaderData {
-    fn new(callback: Box<Fn(&AssetData)>) -> Rc<RefCell<AssetLoaderData>> {
+    fn new() -> Rc<RefCell<AssetLoaderData>> {
         Rc::new(RefCell::new(AssetLoaderData {
             pending: HashMap::new(),
             resolved: HashMap::new(),
-            on_complete: callback,
         }))
+    }
+
+    fn is_ready(&self) -> bool {
+        self.pending.is_empty()
+    }
+
+    fn take_resolved(&mut self) -> HashMap<Box<str>, FetchResult> {
+        std::mem::replace(&mut self.resolved, HashMap::new())
     }
 
     fn process_response(&mut self, uri: &str, result: FetchResult) {
         self.pending.remove(uri);
-
         self.resolved.insert(uri.into(), result);
-
-        if self.pending.is_empty() {
-            let data = AssetData(mem::replace(&mut self.resolved, HashMap::new()));
-            (self.on_complete)(&data);
-        }
     }
 
     fn load(loader: &Rc<RefCell<AssetLoaderData>>, uri: &str) {
@@ -149,14 +149,26 @@ pub struct AssetLoader {
 }
 
 impl AssetLoader {
-    pub fn new<T: Fn(&AssetData) + 'static>(callback: T) -> AssetLoader {
+    pub fn new() -> AssetLoader {
         AssetLoader {
-            data: AssetLoaderData::new(Box::new(callback)),
+            data: AssetLoaderData::new(),
         }
     }
 
     pub fn load(&self, uri: &str) {
         AssetLoaderData::load(&self.data, uri);
+    }
+}
+
+impl Future for AssetLoader {
+    type Item = AssetData;
+    type Error = ();
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        Ok(match self.data.borrow().is_ready() {
+            true => Async::Ready(AssetData(self.data.borrow_mut().take_resolved())),
+            false => Async::NotReady,
+        })
     }
 }
 
