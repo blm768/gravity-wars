@@ -76,15 +76,26 @@ fn compile_shader_from_asset(
     }
 }
 
-#[wasm_bindgen]
-pub fn start_game(assets: &AssetData) {
-    match try_start_game(assets) {
-        Ok(()) => {}
-        Err(err) => log(&format!("Error starting game: {}", err)),
-    }
+// Keeps game callbacks alive so the closures don't get dropped.
+struct GameCallbacks {
+    _render_callback: AnimationFrameCallback,
 }
 
-fn try_start_game(assets: &AssetData) -> Result<(), String> {
+#[wasm_bindgen]
+pub struct GameHandle(Option<GameCallbacks>); // Hack because wasm_bindgen doesn't support functions returning an Option<SomeRustType>
+
+#[wasm_bindgen]
+pub fn start_game(assets: &AssetData) -> GameHandle {
+    GameHandle(
+        try_start_game(assets)
+            .map_err(|err| {
+                log(&format!("Error starting game: {}", err));
+            })
+            .ok(),
+    )
+}
+
+fn try_start_game(assets: &AssetData) -> Result<GameCallbacks, String> {
     let (canvas_element, canvas) =
         get_canvas().ok_or_else(|| String::from("Unable to find canvas"))?;
     let gl_context = get_webgl_context(&canvas)?;
@@ -141,7 +152,8 @@ fn try_start_game(assets: &AssetData) -> Result<(), String> {
 
     let mut render_callback = AnimationFrameCallback::new(render_frame);
     render_callback.start()?;
-    render_callback.forget();
 
-    Ok(())
+    Ok(GameCallbacks {
+        _render_callback: render_callback,
+    })
 }

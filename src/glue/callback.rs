@@ -77,9 +77,4 @@ impl AnimationFrameCallback {
     pub fn is_running(&self) -> bool {
         self.callback_handle.get().is_some()
     }
-
-    pub fn forget(self) {
-        // TODO: figure out how to not need this.
-        self.closure.forget();
-    }
 }
