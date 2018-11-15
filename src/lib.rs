@@ -3,6 +3,7 @@
 
 extern crate cgmath;
 extern crate gltf;
+extern crate js_sys;
 extern crate rgb;
 extern crate wasm_bindgen;
 extern crate web_sys;

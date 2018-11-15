@@ -1,5 +1,6 @@
 const gravity_wars = import("./gravity_wars");
 
 gravity_wars.then(gravity_wars => {
-    gravity_wars.init_game();
+    var game;
+    gravity_wars.load_assets().and_then(assets => { game = gravity_wars.start_game(assets); });
 });

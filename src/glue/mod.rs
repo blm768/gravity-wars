@@ -52,8 +52,8 @@ pub fn get_webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGlRenderingCon
 }
 
 #[wasm_bindgen]
-pub fn init_game() -> AssetLoader {
-    let assets = AssetLoader::new(start_game);
+pub fn load_assets() -> AssetLoader {
+    let assets = AssetLoader::new();
     assets.load("shaders/vertex.glsl");
     assets.load("shaders/fragment.glsl");
     assets.load("assets/meshes/ship.glb");

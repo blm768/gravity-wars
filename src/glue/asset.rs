@@ -6,6 +6,7 @@ use std::fmt::Display;
 use std::mem;
 use std::rc::Rc;
 
+use js_sys::Function;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -105,26 +106,28 @@ impl WasmFetchResult {
 struct AssetLoaderData {
     pending: HashMap<Box<str>, FetchCallback>,
     resolved: HashMap<Box<str>, FetchResult>,
-    on_complete: Box<Fn(&AssetData)>,
+    on_complete: Option<Function>,
 }
 
 impl AssetLoaderData {
-    fn new(callback: Box<Fn(&AssetData)>) -> Rc<RefCell<AssetLoaderData>> {
+    fn new() -> Rc<RefCell<AssetLoaderData>> {
         Rc::new(RefCell::new(AssetLoaderData {
             pending: HashMap::new(),
             resolved: HashMap::new(),
-            on_complete: callback,
+            on_complete: None,
         }))
     }
 
     fn process_response(&mut self, uri: &str, result: FetchResult) {
         self.pending.remove(uri);
-
         self.resolved.insert(uri.into(), result);
 
         if self.pending.is_empty() {
             let data = AssetData(mem::replace(&mut self.resolved, HashMap::new()));
-            (self.on_complete)(&data);
+            if let Some(ref callback) = self.on_complete {
+                let js_val = JsValue::from(data);
+                callback.call1(&JsValue::NULL, &js_val).ok(); // Ignore return value and/or exceptions
+            }
         }
     }
 
@@ -148,15 +151,20 @@ pub struct AssetLoader {
     data: Rc<RefCell<AssetLoaderData>>,
 }
 
+#[wasm_bindgen]
 impl AssetLoader {
-    pub fn new<T: Fn(&AssetData) + 'static>(callback: T) -> AssetLoader {
+    pub fn new() -> AssetLoader {
         AssetLoader {
-            data: AssetLoaderData::new(Box::new(callback)),
+            data: AssetLoaderData::new(),
         }
     }
 
     pub fn load(&self, uri: &str) {
         AssetLoaderData::load(&self.data, uri);
+    }
+
+    pub fn and_then(&self, callback: Function) {
+        self.data.borrow_mut().on_complete = Some(callback)
     }
 }
 

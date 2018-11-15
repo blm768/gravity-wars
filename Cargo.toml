@@ -13,6 +13,7 @@ opt-level = "z"
 [dependencies]
 cgmath = "0.16.1"
 gltf = "0.11"
+js-sys = "0.3.5"
 rgb = "0.8"
 
 [dependencies.wasm-bindgen]
