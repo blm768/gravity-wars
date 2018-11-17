@@ -1,9 +1,11 @@
-use wasm_bindgen::prelude::*;
+use std::cell::RefCell;
+use std::collections::VecDeque;
 
 use std::io::Cursor;
 use std::rc::Rc;
 use std::str;
 
+use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys;
 use web_sys::{Element, HtmlCanvasElement};
@@ -12,18 +14,24 @@ use web_sys::{WebGlRenderingContext, WebGlShader};
 use gltf::Gltf;
 
 use glue::asset::{AssetData, AssetLoader, FetchError};
-use glue::callback::AnimationFrameCallback;
+use glue::callback::{AnimationFrameCallback, IntervalCallback};
+use glue::game_handle::GameHandle;
 use glue::webgl::game_renderer::WebGlRenderer;
 use glue::webgl::{ShaderType, WebGlContext};
 use rendering::material::MaterialShader;
 use rendering::mesh::gltf::GltfLoader;
+use state::event::InputEvent;
 use state::mapgen;
 use state::GameState;
 use state_renderer::{GameRenderer, MeshRenderer};
 
 pub mod asset;
 pub mod callback;
+pub mod game_handle;
 pub mod webgl;
+
+/// Game state update interval (in milliseconds)
+pub const STATE_UPDATE_INTERVAL: usize = 33;
 
 #[wasm_bindgen]
 extern "C" {
@@ -76,26 +84,18 @@ fn compile_shader_from_asset(
     }
 }
 
-// Keeps game callbacks alive so the closures don't get dropped.
-struct GameCallbacks {
-    _render_callback: AnimationFrameCallback,
+#[wasm_bindgen]
+pub fn start_game(assets: &AssetData) -> JsValue {
+    match try_start_game(assets) {
+        Ok(handle) => JsValue::from(handle),
+        Err(err) => {
+            log(&format!("Error starting game: {}", err));
+            JsValue::NULL
+        }
+    }
 }
 
-#[wasm_bindgen]
-pub struct GameHandle(Option<GameCallbacks>); // Hack because wasm_bindgen doesn't support functions returning an Option<SomeRustType>
-
-#[wasm_bindgen]
-pub fn start_game(assets: &AssetData) -> GameHandle {
-    GameHandle(
-        try_start_game(assets)
-            .map_err(|err| {
-                log(&format!("Error starting game: {}", err));
-            })
-            .ok(),
-    )
-}
-
-fn try_start_game(assets: &AssetData) -> Result<GameCallbacks, String> {
+fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     let (canvas_element, canvas) =
         get_canvas().ok_or_else(|| String::from("Unable to find canvas"))?;
     let gl_context = get_webgl_context(&canvas)?;
@@ -144,16 +144,38 @@ fn try_start_game(assets: &AssetData) -> Result<GameCallbacks, String> {
 
     mapgen::add_ships(&mut state, ship_renderer);
 
+    let shared_state = Rc::new(RefCell::new(state));
+
+    let render_state = Rc::clone(&shared_state);
+    let renderer_clone = Rc::clone(&renderer);
     let render_frame = move |_milliseconds: f64| {
-        renderer
-            .render(&state)
+        renderer_clone
+            .render(&render_state.borrow())
             .unwrap_or_else(|e| log(&e.to_string()));
+    };
+
+    let input_queue = Rc::new(RefCell::new(VecDeque::<InputEvent>::new()));
+
+    let update_state = Rc::clone(&shared_state);
+    let update_input_queue = Rc::clone(&input_queue);
+    let update_game = move || {
+        let mut queue = update_input_queue.borrow_mut();
+        let queue_len = queue.len();
+        for event in queue.drain(0..queue_len) {
+            update_state.borrow_mut().handle_input(&event);
+        }
     };
 
     let mut render_callback = AnimationFrameCallback::new(render_frame);
     render_callback.start()?;
+    let mut update_callback = IntervalCallback::new(update_game, STATE_UPDATE_INTERVAL as i32);
+    update_callback.start()?;
 
-    Ok(GameCallbacks {
-        _render_callback: render_callback,
-    })
+    Ok(GameHandle::new(
+        shared_state,
+        renderer,
+        input_queue,
+        render_callback,
+        update_callback,
+    ))
 }

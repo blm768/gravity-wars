@@ -6,7 +6,9 @@ use cgmath::Vector3;
 use rendering::light::PointLight;
 use rendering::scene::Camera;
 use rendering::Rgb;
+use state::event::InputEvent;
 
+pub mod event;
 pub mod mapgen;
 
 #[derive(Debug)]
@@ -54,5 +56,17 @@ impl GameState {
 
     pub fn camera(&self) -> &Camera {
         &self.camera
+    }
+
+    pub fn handle_input(&mut self, event: &InputEvent) {
+        // TODO: clamp movement/scale.
+        match event {
+            InputEvent::PanCamera(delta) => {
+                self.camera.position += Vector3::new(delta.x, delta.y, 0.0);
+            }
+            InputEvent::ZoomCamera(ref scale) => {
+                self.camera.log_scale += scale;
+            }
+        }
     }
 }

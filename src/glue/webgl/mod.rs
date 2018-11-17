@@ -193,6 +193,10 @@ impl WebGlContext {
         }
     }
 
+    pub fn canvas(&self) -> &HtmlCanvasElement {
+        &self.canvas
+    }
+
     pub fn gl_context(&self) -> &Rc<WebGlRenderingContext> {
         &self.gl_context
     }
@@ -200,6 +204,14 @@ impl WebGlContext {
     pub fn aspect_ratio(&self) -> f32 {
         self.gl_context.drawing_buffer_width() as f32
             / self.gl_context.drawing_buffer_height() as f32
+    }
+
+    pub fn width(&self) -> i32 {
+        self.gl_context.drawing_buffer_width()
+    }
+
+    pub fn height(&self) -> i32 {
+        self.gl_context.drawing_buffer_height()
     }
 
     pub fn set_viewport(&self) {
