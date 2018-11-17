@@ -1,6 +1,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use js_sys::Array;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use web_sys;
@@ -71,10 +72,69 @@ impl AnimationFrameCallback {
                 .unwrap()
                 .cancel_animation_frame(handle)
                 .unwrap_or(());
+            self.callback_handle.set(None);
         }
     }
 
     pub fn is_running(&self) -> bool {
         self.callback_handle.get().is_some()
+    }
+}
+
+impl Drop for AnimationFrameCallback {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
+pub struct IntervalCallback {
+    closure: Closure<Fn()>,
+    milliseconds: i32,
+    callback_handle: Option<i32>,
+}
+
+impl IntervalCallback {
+    pub fn new<F: Fn() + 'static>(callback: F, milliseconds: i32) -> IntervalCallback {
+        let closure = Closure::new(callback);
+        IntervalCallback {
+            closure,
+            milliseconds,
+            callback_handle: None,
+        }
+    }
+
+    pub fn start(&mut self) -> Result<(), String> {
+        if self.is_running() {
+            return Ok(());
+        }
+        let handle = web_sys::window()
+            .unwrap()
+            .set_interval_with_callback_and_timeout_and_arguments(
+                self.closure.as_ref().unchecked_ref(),
+                self.milliseconds,
+                &Array::new(),
+            )
+            .map_err(|_| String::from("Error in window.setInterval()"))?;
+        self.callback_handle = Some(handle);
+        Ok(())
+    }
+
+    pub fn stop(&mut self) {
+        if let Some(handle) = self.callback_handle {
+            web_sys::window()
+                .unwrap()
+                .clear_interval_with_handle(handle);
+            self.callback_handle = None;
+        }
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.callback_handle.is_some()
+    }
+}
+
+impl Drop for IntervalCallback {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
