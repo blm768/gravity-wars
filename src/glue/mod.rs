@@ -143,6 +143,11 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     ));
 
     mapgen::add_ships(&mut state, ship_renderer);
+    mapgen::add_planets(
+        &mut state,
+        Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
+    )
+    .map_err(|_| String::from("Unable to create planet mesh/renderer"))?;
 
     let shared_state = Rc::new(RefCell::new(state));
 

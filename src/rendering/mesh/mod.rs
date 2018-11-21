@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
-use rendering::buffer::{AttributeBuffer, ElementBinding, VertexAttributeBinding};
+use rendering::buffer::{AttributeBuffer, Buffer, BufferData, ElementBinding};
+use rendering::buffer::{VertexAttributeBinding, VertexIndexData};
 use rendering::context::RenderingContext;
 use rendering::material::{Material, MaterialShader};
 
@@ -91,5 +92,24 @@ pub struct ElementIndices<Context: RenderingContext + ?Sized> {
 impl<Context: RenderingContext> ElementIndices<Context> {
     pub fn new(buffer: Rc<Context::IndexBuffer>, binding: ElementBinding) -> Self {
         ElementIndices { buffer, binding }
+    }
+
+    pub fn from_data<E>(
+        data: &BufferData<E>,
+        context: &Context,
+    ) -> Result<ElementIndices<Context>, ()>
+    where
+        E: VertexIndexData,
+    {
+        let index_buf = context.make_index_buffer()?;
+        index_buf.set_data(data.as_bytes());
+        Ok(ElementIndices::new(
+            Rc::new(index_buf),
+            ElementBinding {
+                index_type: E::INDEX_TYPE,
+                count: data.num_elements(),
+                offset: 0,
+            },
+        ))
     }
 }

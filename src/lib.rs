@@ -9,6 +9,7 @@ extern crate wasm_bindgen;
 extern crate web_sys;
 
 pub mod glue;
+pub mod meshgen;
 pub mod rendering;
 pub mod state;
 pub mod state_renderer;
