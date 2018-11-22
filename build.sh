@@ -1,7 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-cargo +nightly build --release --target wasm32-unknown-unknown
+cargo_opts=(--target wasm32-unknown-unknown)
+
+case "$1" in
+    -r|--release)
+        cargo_opts+=(--release)
+    ;;
+esac
+
+cargo +nightly build "${cargo_opts[@]}"
 
 wasm-bindgen \
     target/wasm32-unknown-unknown/release/gravity_wars.wasm \
