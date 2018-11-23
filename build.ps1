@@ -4,13 +4,16 @@ Param(
     $Release
 )
 
-$CargoArgs = "--target", "wasm32-unknown-unknown"
+$CargoOpts = "--target", "wasm32-unknown-unknown"
+$TargetDir = "debug"
+
 if ($Release) {
-    $CargoArgs += "--release"
+    $CargoOpts += "--release"
+    $TargetDir = "release"
 }
 
-cargo build @CargoArgs
+cargo build @CargoOpts
 
 wasm-bindgen `
-    target\wasm32-unknown-unknown\release\gravity_wars.wasm `
+    "target\wasm32-unknown-unknown\$TargetDir\gravity_wars.wasm" `
     --out-dir .
