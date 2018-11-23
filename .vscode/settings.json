@@ -6,7 +6,10 @@
         "**/node_modules/**": true,
         "**/target/**": true
     },
-
+    "search.exclude": {
+        "node_modules": true,
+        "target": true,
+    },
     "[javascript]": {
         "editor.formatOnSave": true
     }
