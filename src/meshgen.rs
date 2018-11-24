@@ -89,14 +89,15 @@ impl GridMesh {
         }
         attribute_buf.set_data(attribute_data.as_bytes());
 
-        let stride = mem::size_of::<Vector3<f32>>() * 2;
+        let vec_size = mem::size_of::<Vector3<f32>>();
+        let stride = vec_size * 2;
 
         let mut pos_binding = VertexAttributeBinding::typed::<Vector3<f32>>(self.positions.len());
         pos_binding.set_stride(stride);
         let positions = VertexAttribute::new(Rc::clone(&attribute_buf), pos_binding);
 
         let mut normal_binding = VertexAttributeBinding::typed::<Vector3<f32>>(self.normals.len());
-        normal_binding.set_offset(stride);
+        normal_binding.set_offset(vec_size);
         normal_binding.set_stride(stride);
         let normals = VertexAttribute::new(Rc::clone(&attribute_buf), normal_binding);
 
@@ -137,8 +138,8 @@ impl CubeFace {
 
     pub fn tangent(&self) -> Vector3<f32> {
         match self {
-            CubeFace::Left => Vector3::new(0.0, 0.0, -1.0),
-            CubeFace::Right => Vector3::new(0.0, 0.0, 1.0),
+            CubeFace::Left => Vector3::new(0.0, 0.0, 1.0),
+            CubeFace::Right => Vector3::new(0.0, 0.0, -1.0),
             CubeFace::Bottom => Vector3::new(1.0, 0.0, 0.0),
             CubeFace::Top => Vector3::new(1.0, 0.0, 0.0),
             CubeFace::Back => Vector3::new(-1.0, 0.0, 0.0),
@@ -150,7 +151,7 @@ impl CubeFace {
         match self {
             CubeFace::Left => Vector3::new(0.0, 1.0, 0.0),
             CubeFace::Right => Vector3::new(0.0, 1.0, 0.0),
-            CubeFace::Bottom => Vector3::new(0.0, 0.0, -1.0),
+            CubeFace::Bottom => Vector3::new(0.0, 0.0, 1.0),
             CubeFace::Top => Vector3::new(0.0, 0.0, -1.0),
             CubeFace::Back => Vector3::new(0.0, 1.0, 0.0),
             CubeFace::Front => Vector3::new(0.0, 1.0, 0.0),
@@ -178,17 +179,17 @@ pub fn gen_part_sphere(radius: f32, segments: usize, face: CubeFace) -> GridMesh
     let min = -radius;
     let step = 2.0 * radius / segments as f32;
 
-    let normal = face.normal();
-    let tangent = face.tangent();
-    let bitangent = face.bitangent();
+    let face_normal = face.normal();
+    let face_tangent = face.tangent();
+    let face_bitangent = face.bitangent();
 
     let mut mesh = GridMesh::new(segments);
     let verts_per_dim = segments + 1;
     for row in 0..verts_per_dim {
-        let y = min + (row as f32) * step;
+        let v = min + (row as f32) * step;
         for col in 0..verts_per_dim {
-            let x = min + (col as f32) * step;
-            let cube_loc = normal + x * tangent + y * bitangent;
+            let u = min + (col as f32) * step;
+            let cube_loc = face_normal * radius + u * face_tangent + v * face_bitangent;
             let sphere_loc = cube_to_sphere(&cube_loc);
             mesh.set_position_at(row, col, sphere_loc);
             mesh.set_normal_at(row, col, sphere_loc / radius);
