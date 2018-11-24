@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "./build.sh",
             "windows": {
-                "command": ".\\build.bat"
+                "command": ".\\build.ps1"
             },
             "group": {
                 "kind": "build",
@@ -16,21 +16,10 @@
                 "reveal": "always",
                 "panel": "new",
                 "focus": true
-            }
-        },
-        {
-            "label": "cargo build",
-            "type": "shell",
-            "command": "cargo build",
-            "group": {
-                "kind": "build",
-                "isDefault": true
             },
-            "presentation": {
-                "reveal": "always",
-                "panel": "new",
-                "focus": true
-            }
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }
