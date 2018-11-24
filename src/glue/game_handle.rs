@@ -8,7 +8,7 @@ use web_sys::HtmlCanvasElement;
 
 use glue::callback::{AnimationFrameCallback, IntervalCallback};
 use glue::webgl::game_renderer::WebGlRenderer;
-use state::event::InputEvent;
+use state::event::{InputEvent, MissileParams};
 use state::GameState;
 
 // Main interface between JavaScript and Rust
@@ -67,5 +67,15 @@ impl GameHandle {
         self.input_queue
             .borrow_mut()
             .push_back(InputEvent::ZoomCamera(factor));
+    }
+
+    #[wasm_bindgen(js_name = onFire)]
+    pub fn on_fire(&mut self, angle: f32) {
+        self.input_queue
+            .borrow_mut()
+            .push_back(InputEvent::FireMissile(MissileParams {
+                angle,
+                speed: 10.0,
+            }));
     }
 }

@@ -6,7 +6,7 @@ use meshgen;
 use rendering::context::RenderingContext;
 use rendering::material::Material;
 use rendering::Rgba;
-use state::{Entity, EntityRenderer, GameState};
+use state::{Entity, EntityRenderer, GameState, Ship};
 use state_renderer::{GameRenderer, MeshRenderer};
 
 pub fn generate_map(_state: &mut GameState) {}
@@ -36,6 +36,7 @@ where
 
 pub fn add_ships(state: &mut GameState, ship_renderer: Rc<EntityRenderer>) {
     let mut ship = Entity::new(Vector3::new(0.0, 0.0, 0.0));
+    ship.ship = Some(Ship {});
     ship.renderer = Some(ship_renderer);
     state.entities.push(ship)
 }

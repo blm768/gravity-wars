@@ -167,8 +167,11 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         let mut queue = update_input_queue.borrow_mut();
         let queue_len = queue.len();
         for event in queue.drain(0..queue_len) {
-            update_state.borrow_mut().handle_input(&event);
+            if let Err(e) = update_state.borrow_mut().handle_input(&event) {
+                log(&e.to_string());
+            }
         }
+        update_state.borrow_mut().update_missiles();
     };
 
     let mut render_callback = AnimationFrameCallback::new(render_frame);

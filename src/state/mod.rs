@@ -6,15 +6,20 @@ use cgmath::Vector3;
 use rendering::light::PointLight;
 use rendering::scene::Camera;
 use rendering::Rgb;
-use state::event::InputEvent;
+use state::event::{InputEvent, InputEventError};
 
 pub mod event;
 pub mod mapgen;
+
+// Maximum time to live (in seconds)
+pub const MISSILE_TIME_TO_LIVE: f32 = 30.0;
 
 #[derive(Debug)]
 pub struct Entity {
     pub position: Vector3<f32>,
     pub renderer: Option<Rc<EntityRenderer>>,
+    pub missile_trail: Option<MissileTrail>,
+    pub ship: Option<Ship>,
 }
 
 impl Entity {
@@ -22,6 +27,8 @@ impl Entity {
         Entity {
             position,
             renderer: None,
+            missile_trail: None,
+            ship: None,
         }
     }
 }
@@ -29,6 +36,16 @@ impl Entity {
 pub trait EntityRenderer: Debug {
     fn render(&self, entity: &Entity);
 }
+
+#[derive(Clone, Debug)]
+pub struct MissileTrail {
+    pub time_to_live: f32,
+    pub velocity: Vector3<f32>,
+    pub positions: Vec<Vector3<f32>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Ship {}
 
 pub struct GameState {
     pub entities: Vec<Entity>,
@@ -58,7 +75,11 @@ impl GameState {
         &self.camera
     }
 
-    pub fn handle_input(&mut self, event: &InputEvent) {
+    pub fn get_ship(&self) -> Option<&Entity> {
+        self.entities.iter().find(|e| e.ship.is_some())
+    }
+
+    pub fn handle_input(&mut self, event: &InputEvent) -> Result<(), InputEventError> {
         // TODO: clamp movement/scale.
         match event {
             InputEvent::PanCamera(delta) => {
@@ -66,6 +87,46 @@ impl GameState {
             }
             InputEvent::ZoomCamera(ref scale) => {
                 self.camera.log_scale += scale;
+            }
+            InputEvent::FireMissile(ref params) => {
+                // TODO: validation
+                let missile = {
+                    let ship = self
+                        .get_ship()
+                        .ok_or(InputEventError::NoShipToFireMissile)?;
+                    let mut entity = Entity::new(ship.position);
+                    entity.missile_trail = Some(MissileTrail {
+                        time_to_live: MISSILE_TIME_TO_LIVE,
+                        velocity: Vector3::new(
+                            params.speed * params.angle.cos(),
+                            params.speed * params.angle.sin(),
+                            0.0,
+                        ),
+                        positions: Vec::new(),
+                    });
+                    entity
+                };
+                self.entities.push(missile);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn update_missiles(&mut self) {
+        let missiles = self
+            .entities
+            .iter_mut()
+            .filter_map(|e| match e.missile_trail {
+                Some(ref mut trail) => Some((&mut e.position, trail)),
+                None => None,
+            });
+
+        for (pos, missile) in missiles {
+            if missile.time_to_live > 0.0 {
+                missile.time_to_live -= 1.0; // TODO: figure out time handling properly...
+                *pos += missile.velocity;
+                missile.positions.push(*pos);
+                // TODO: handle collisions.
             }
         }
     }
