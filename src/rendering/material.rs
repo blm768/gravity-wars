@@ -1,6 +1,6 @@
 use rendering;
 use rendering::light::{PointLight, ShaderLightInfo};
-use rendering::shader::{ShaderParamInfo, ShaderProgram};
+use rendering::shader::{ShaderInfoError, ShaderParamInfo, ShaderProgram};
 use rendering::Rgba;
 
 #[derive(Clone, Copy, Debug)]
@@ -8,12 +8,6 @@ pub struct Material {
     pub base_color: Rgba,
     pub metal_factor: f32,
     pub roughness: f32,
-}
-
-#[derive(Debug)]
-pub enum ShaderInfoError {
-    MissingAttribute(String),
-    MissingUniform(String),
 }
 
 #[derive(Debug)]
@@ -49,25 +43,14 @@ impl MaterialShaderInfo {
 
 impl MaterialShaderInfo {
     pub fn from_program(program: &ShaderProgram) -> Result<MaterialShaderInfo, ShaderInfoError> {
-        let attributes = program.attributes();
-        let uniforms = program.uniforms();
-        let get_attribute = |name: &str| match attributes.get(name) {
-            Some(info) => Ok(info.clone()),
-            None => Err(ShaderInfoError::MissingAttribute(String::from(name))),
-        };
-        let get_uniform = |name: &str| match uniforms.get(name) {
-            Some(info) => Ok(info.clone()),
-            None => Err(ShaderInfoError::MissingUniform(String::from(name))),
-        };
-
         Ok(MaterialShaderInfo {
-            position: get_attribute("position")?,
-            normal: get_attribute("normal")?,
-            projection: get_uniform("projection")?,
-            model_view: get_uniform("modelView")?,
-            base_color: get_uniform("material.baseColor").ok(),
-            metal_factor: get_uniform("material.metal").ok(),
-            roughness: get_uniform("material.roughness").ok(),
+            position: ShaderParamInfo::attribute(program, "position")?,
+            normal: ShaderParamInfo::attribute(program, "normal")?,
+            projection: ShaderParamInfo::uniform(program, "projection")?,
+            model_view: ShaderParamInfo::uniform(program, "modelView")?,
+            base_color: ShaderParamInfo::uniform(program, "material.baseColor").ok(),
+            metal_factor: ShaderParamInfo::uniform(program, "material.metal").ok(),
+            roughness: ShaderParamInfo::uniform(program, "material.roughness").ok(),
             lights: ShaderLightInfo::from_program(program),
         })
     }

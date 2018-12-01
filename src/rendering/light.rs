@@ -17,10 +17,9 @@ pub struct ShaderLightInfo {
 
 impl ShaderLightInfo {
     pub fn from_program(program: &ShaderProgram) -> Option<ShaderLightInfo> {
-        let uniforms = program.uniforms();
         Some(ShaderLightInfo {
-            color: uniforms.get("light.color")?.clone(),
-            position: uniforms.get("light.position")?.clone(),
+            color: program.uniform("light.color")?,
+            position: program.uniform("light.position")?,
         })
     }
 

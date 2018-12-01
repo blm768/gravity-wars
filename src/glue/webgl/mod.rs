@@ -56,6 +56,7 @@ struct ShaderUniformInformation {
 pub struct ShaderProgram {
     program: WebGlProgram,
     context: Rc<WebGlRenderingContext>,
+    attributes: HashMap<Box<str>, ShaderParamInfo>,
     uniforms: Vec<ShaderUniformInformation>,
 }
 
@@ -77,10 +78,12 @@ impl ShaderProgram {
             .as_bool()
             .unwrap_or(false)
         {
+            let attributes = ShaderProgram::get_attribute_info(&context, &program);
             let uniforms = ShaderProgram::get_uniform_info(&context, &program);
             Ok(ShaderProgram {
                 program,
                 context,
+                attributes,
                 uniforms,
             })
         } else {
@@ -90,12 +93,33 @@ impl ShaderProgram {
         }
     }
 
+    fn get_attribute_info(
+        context: &WebGlRenderingContext,
+        program: &WebGlProgram,
+    ) -> HashMap<Box<str>, ShaderParamInfo> {
+        let num_attributes = context
+            .get_program_parameter(program, WebGlRenderingContext::ACTIVE_ATTRIBUTES)
+            .as_f64()
+            .unwrap() as u32;
+        let mut attributes = HashMap::<Box<str>, ShaderParamInfo>::new();
+        for i in 0..num_attributes {
+            if let Some(info) = context.get_active_attrib(program, i) {
+                // TODO: log errors?
+                attributes.insert(
+                    info.name().into_boxed_str(),
+                    ShaderParamInfo { index: i as usize },
+                );
+            }
+        }
+        attributes
+    }
+
     fn get_uniform_info(
         context: &WebGlRenderingContext,
         program: &WebGlProgram,
     ) -> Vec<ShaderUniformInformation> {
         let num_uniforms = context
-            .get_program_parameter(&program, WebGlRenderingContext::ACTIVE_UNIFORMS)
+            .get_program_parameter(program, WebGlRenderingContext::ACTIVE_UNIFORMS)
             .as_f64()
             .unwrap() as u32; // TODO: create (and use) a safe conversion helper...
         let mut uniforms = Vec::<ShaderUniformInformation>::new();
@@ -103,7 +127,7 @@ impl ShaderProgram {
 
         for i in 0..num_uniforms {
             // TODO: log errors?
-            if let Some(info) = context.get_active_uniform(&program, i) {
+            if let Some(info) = context.get_active_uniform(program, i) {
                 let name: Box<str> = info.name().into();
                 if let Some(location) = context.get_uniform_location(&program, &name) {
                     uniforms.push(ShaderUniformInformation { name, location });
@@ -115,31 +139,30 @@ impl ShaderProgram {
 }
 
 impl shader::ShaderProgram for ShaderProgram {
-    fn attributes(&self) -> HashMap<Box<str>, ShaderParamInfo> {
-        let num_attributes = self
-            .context
-            .get_program_parameter(&self.program, WebGlRenderingContext::ACTIVE_ATTRIBUTES)
-            .as_f64()
-            .unwrap() as u32;
-        let mut attributes = HashMap::<Box<str>, ShaderParamInfo>::new();
-        for i in 0..num_attributes {
-            if let Some(info) = self.context.get_active_attrib(&self.program, i) {
-                // TODO: log errors?
-                attributes.insert(
-                    info.name().into_boxed_str(),
-                    ShaderParamInfo { index: i as usize },
-                );
-            }
-        }
-        attributes
+    fn attribute_names(&self) -> Vec<String> {
+        self.attributes
+            .keys()
+            .map(|e| String::from(e.as_ref()))
+            .collect::<Vec<_>>()
     }
 
-    fn uniforms(&self) -> HashMap<Box<str>, ShaderParamInfo> {
+    fn uniform_names(&self) -> Vec<String> {
+        self.uniforms
+            .iter()
+            .map(|u| String::from(u.name.as_ref()))
+            .collect::<Vec<_>>()
+    }
+
+    fn attribute(&self, name: &str) -> Option<ShaderParamInfo> {
+        self.attributes.get(name).map(|inf| inf.clone())
+    }
+
+    fn uniform(&self, name: &str) -> Option<ShaderParamInfo> {
         self.uniforms
             .iter()
             .enumerate()
-            .map({ |(i, uniform)| (uniform.name.clone(), ShaderParamInfo { index: i }) })
-            .collect::<HashMap<_, _>>()
+            .find(|(_, inf)| inf.name.as_ref() == name)
+            .map(|(i, _)| ShaderParamInfo { index: i })
     }
 
     fn activate(&self) {

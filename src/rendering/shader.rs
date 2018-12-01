@@ -1,16 +1,40 @@
-use std::collections::HashMap;
 use std::fmt::Debug;
 
 use cgmath::{Matrix4, Vector3, Vector4};
+
+#[derive(Clone, Debug)]
+pub enum ShaderInfoError {
+    MissingAttribute(String),
+    MissingUniform(String),
+}
 
 #[derive(Clone, Debug)]
 pub struct ShaderParamInfo {
     pub index: usize,
 }
 
+impl ShaderParamInfo {
+    pub fn attribute(
+        shader: &ShaderProgram,
+        name: &str,
+    ) -> Result<ShaderParamInfo, ShaderInfoError> {
+        shader
+            .attribute(name)
+            .ok_or_else(|| ShaderInfoError::MissingAttribute(String::from(name)))
+    }
+
+    pub fn uniform(shader: &ShaderProgram, name: &str) -> Result<ShaderParamInfo, ShaderInfoError> {
+        shader
+            .uniform(name)
+            .ok_or_else(|| ShaderInfoError::MissingUniform(String::from(name)))
+    }
+}
+
 pub trait ShaderProgram: Debug {
-    fn attributes(&self) -> HashMap<Box<str>, ShaderParamInfo>;
-    fn uniforms(&self) -> HashMap<Box<str>, ShaderParamInfo>;
+    fn attribute_names(&self) -> Vec<String>;
+    fn uniform_names(&self) -> Vec<String>;
+    fn attribute(&self, name: &str) -> Option<ShaderParamInfo>;
+    fn uniform(&self, name: &str) -> Option<ShaderParamInfo>;
 
     fn activate(&self);
     fn set_uniform_f32(&self, index: usize, value: f32);
