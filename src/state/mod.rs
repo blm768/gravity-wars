@@ -41,20 +41,48 @@ pub trait EntityRenderer: Debug {
 pub struct MissileTrail {
     pub time_to_live: f32,
     pub velocity: Vector3<f32>,
-    pub positions: Vec<Vector3<f32>>,
+    positions: Vec<Vector3<f32>>,
+    data_version: usize,
+}
+
+impl MissileTrail {
+    pub fn new(velocity: Vector3<f32>) -> MissileTrail {
+        MissileTrail {
+            time_to_live: MISSILE_TIME_TO_LIVE,
+            velocity,
+            positions: Vec::new(),
+            data_version: 0,
+        }
+    }
+
+    pub fn data_version(&self) -> usize {
+        self.data_version
+    }
+
+    pub fn positions(&self) -> &[Vector3<f32>] {
+        &self.positions
+    }
+
+    pub fn add_position(&mut self, position: Vector3<f32>) {
+        self.data_version += 1;
+        self.positions.push(position);
+    }
 }
 
 #[derive(Clone, Debug)]
 pub struct Ship {}
 
+pub type RendererFactory = Box<FnMut() -> Option<Rc<EntityRenderer>>>;
+
 pub struct GameState {
     pub entities: Vec<Entity>,
     pub camera: Camera,
     pub light: PointLight,
+    pub make_missile_renderer: RendererFactory,
 }
 
 impl GameState {
-    pub fn new() -> GameState {
+    pub fn new(make_missile_renderer: RendererFactory) -> GameState {
         let light = PointLight {
             color: Rgb::new(1.0, 1.0, 1.0),
             position: Vector3::new(0.0, 0.0, -3.0),
@@ -64,6 +92,7 @@ impl GameState {
             entities: Vec::new(),
             camera: Camera::new(),
             light,
+            make_missile_renderer,
         }
     }
 
@@ -87,10 +116,12 @@ impl GameState {
             InputEvent::FireMissile(ref params) => {
                 // TODO: validation
                 let missile = {
-                    let ship = self
-                        .get_ship()
-                        .ok_or(InputEventError::NoShipToFireMissile)?;
-                    let mut entity = Entity::new(ship.position);
+                    let mut entity = {
+                        let ship = self
+                            .get_ship()
+                            .ok_or(InputEventError::NoShipToFireMissile)?;
+                        Entity::new(ship.position)
+                    };
                     entity.missile_trail = Some(MissileTrail {
                         time_to_live: MISSILE_TIME_TO_LIVE,
                         velocity: Vector3::new(
@@ -99,7 +130,9 @@ impl GameState {
                             0.0,
                         ),
                         positions: Vec::new(),
+                        data_version: 0,
                     });
+                    entity.renderer = (self.make_missile_renderer)();
                     entity
                 };
                 self.entities.push(missile);
@@ -121,7 +154,7 @@ impl GameState {
             if missile.time_to_live > 0.0 {
                 missile.time_to_live -= 1.0; // TODO: figure out time handling properly...
                 *pos += missile.velocity;
-                missile.positions.push(*pos);
+                missile.add_position(*pos);
                 // TODO: handle collisions.
             }
         }

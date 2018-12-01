@@ -1,6 +1,7 @@
 pub mod buffer;
 pub mod context;
 pub mod light;
+pub mod line;
 pub mod material;
 pub mod mesh;
 pub mod scene;

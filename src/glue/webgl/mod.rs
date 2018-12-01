@@ -43,7 +43,6 @@ pub fn compile_shader(
         Err(context
             .get_shader_info_log(&shader)
             .unwrap_or_else(|| "Unknown error".into()))
-        .map_err(|e| format!("Error compiling shader: {}", e))
     }
 }
 
@@ -298,6 +297,11 @@ impl BoundShader<WebGlContext> for WebGlBoundShader {
             to_gl_element_type(indices.binding.index_type),
             indices.binding.offset as i32,
         );
+    }
+
+    fn draw_polyline(&self, num_vertices: usize) {
+        self.context
+            .draw_arrays(WebGlRenderingContext::LINE_STRIP, 0, num_vertices as i32);
     }
 
     fn set_uniform_f32(&self, index: usize, value: f32) {

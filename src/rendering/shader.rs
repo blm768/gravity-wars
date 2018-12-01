@@ -48,6 +48,7 @@ pub trait ShaderProgram: Debug {
 pub trait BoundShader<Context: RenderingContext + ?Sized> {
     fn draw_triangles(&self, count: usize);
     fn draw_indexed_triangles(&self, indices: &ElementIndices<Context>);
+    fn draw_polyline(&self, num_vertices: usize);
 
     fn set_uniform_f32(&self, index: usize, value: f32);
     fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>);

@@ -13,17 +13,19 @@ use web_sys::{WebGlRenderingContext, WebGlShader};
 
 use gltf::Gltf;
 
-use crate::glue::asset::{AssetData, AssetLoader, FetchError};
+use crate::glue::asset::{AssetData, AssetLoader};
 use crate::glue::callback::{AnimationFrameCallback, IntervalCallback};
 use crate::glue::game_handle::GameHandle;
 use crate::glue::webgl::game_renderer::WebGlRenderer;
-use crate::glue::webgl::{ShaderType, WebGlContext};
+use crate::glue::webgl::{ShaderProgram, ShaderType, WebGlContext};
+use crate::rendering::line::LineShader;
 use crate::rendering::material::MaterialShader;
 use crate::rendering::mesh::gltf::GltfLoader;
+use crate::rendering::Rgb;
 use crate::state::event::InputEvent;
 use crate::state::mapgen;
-use crate::state::GameState;
-use crate::state_renderer::{GameRenderer, MeshRenderer};
+use crate::state::{EntityRenderer, GameState};
+use crate::state_renderer::{GameRenderer, MeshRenderer, MissileTrailRenderer};
 
 pub mod asset;
 pub mod callback;
@@ -64,6 +66,8 @@ pub fn load_assets() -> AssetLoader {
     let assets = AssetLoader::new();
     assets.load("shaders/vertex.glsl");
     assets.load("shaders/fragment.glsl");
+    assets.load("shaders/line_vertex.glsl");
+    assets.load("shaders/line_fragment.glsl");
     assets.load("assets/meshes/ship.glb");
 
     assets
@@ -71,17 +75,30 @@ pub fn load_assets() -> AssetLoader {
 
 fn compile_shader_from_asset(
     url: &str,
-    asset: Result<&[u8], FetchError>,
+    assets: &AssetData,
     context: &WebGlRenderingContext,
     shader_type: ShaderType,
 ) -> Result<WebGlShader, String> {
-    match asset {
+    match assets.get(url) {
         Ok(ref data) => {
             let text = str::from_utf8(data).unwrap_or("<UTF-8 decoding error>");
             webgl::compile_shader(context, shader_type, text)
+                .map_err(|e| format!("Error compiling shader {}: {}", url, e))
         }
         Err(error) => Err(format!("Unable to load asset {}: {}", url, error)),
     }
+}
+
+fn load_program_from_assets(
+    vert_url: &str,
+    frag_url: &str,
+    assets: &AssetData,
+    context: Rc<WebGlRenderingContext>,
+) -> Result<ShaderProgram, String> {
+    let vertex_shader = compile_shader_from_asset(vert_url, assets, &context, ShaderType::Vertex)?;
+    let fragment_shader =
+        compile_shader_from_asset(frag_url, assets, &context, ShaderType::Fragment)?;
+    webgl::ShaderProgram::link(context, [vertex_shader, fragment_shader].iter())
 }
 
 #[wasm_bindgen]
@@ -101,29 +118,36 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     let gl_context = get_webgl_context(&canvas)?;
     let context = Rc::new(WebGlContext::new(canvas_element, canvas, gl_context));
 
-    let mut state = GameState::new();
-    mapgen::generate_map(&mut state);
-
-    let vertex_shader = compile_shader_from_asset(
+    let mat_program = load_program_from_assets(
         "shaders/vertex.glsl",
-        assets.get("shaders/vertex.glsl"),
-        context.gl_context(),
-        ShaderType::Vertex,
-    )?;
-    let fragment_shader = compile_shader_from_asset(
         "shaders/fragment.glsl",
-        assets.get("shaders/fragment.glsl"),
-        context.gl_context(),
-        ShaderType::Fragment,
+        assets,
+        Rc::clone(context.gl_context()),
     )?;
-    let program = webgl::ShaderProgram::link(
-        context.gl_context().clone(),
-        [vertex_shader, fragment_shader].iter(),
+    let line_program = load_program_from_assets(
+        "shaders/line_vertex.glsl",
+        "shaders/line_fragment.glsl",
+        assets,
+        Rc::clone(context.gl_context()),
     )?;
-    let mat_shader = MaterialShader::new(program).map_err(|e| format!("{:?}", e))?;
+    let mat_shader = MaterialShader::new(mat_program).map_err(|e| format!("{:?}", e))?;
+    let line_shader = LineShader::new(line_program).map_err(|e| format!("{:?}", e))?;
 
-    let renderer = Rc::new(WebGlRenderer::new(Rc::clone(&context), mat_shader));
+    let renderer = Rc::new(WebGlRenderer::new(
+        Rc::clone(&context),
+        mat_shader,
+        line_shader,
+    ));
     renderer.configure_context();
+
+    let renderer_clone = Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>;
+    let make_missile_trail = move || {
+        Some(Rc::new(
+            MissileTrailRenderer::new(Rc::clone(&renderer_clone), Rgb::new(1.0, 1.0, 1.0)).ok()?,
+        ) as Rc<EntityRenderer>)
+    };
+    let mut state = GameState::new(Box::new(make_missile_trail));
+    mapgen::generate_map(&mut state);
 
     let raw_gltf = assets
         .get("assets/meshes/ship.glb")

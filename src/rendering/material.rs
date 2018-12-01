@@ -33,6 +33,21 @@ pub struct MaterialShaderInfo {
 }
 
 impl MaterialShaderInfo {
+    pub fn from_program<Context: RenderingContext>(
+        program: &ShaderProgram<RenderingContext = Context>,
+    ) -> Result<MaterialShaderInfo, ShaderInfoError> {
+        Ok(MaterialShaderInfo {
+            position: ShaderParamInfo::attribute(program, "position")?,
+            normal: ShaderParamInfo::attribute(program, "normal")?,
+            projection: ShaderParamInfo::uniform(program, "projection")?,
+            model_view: ShaderParamInfo::uniform(program, "modelView")?,
+            base_color: ShaderParamInfo::uniform(program, "material.baseColor").ok(),
+            metal_factor: ShaderParamInfo::uniform(program, "material.metal").ok(),
+            roughness: ShaderParamInfo::uniform(program, "material.roughness").ok(),
+            lights: ShaderLightInfo::from_program(program),
+        })
+    }
+
     pub fn bind_material<Context: RenderingContext>(
         &self,
         material: &Material,
@@ -50,23 +65,6 @@ impl MaterialShaderInfo {
         if let Some(ref roughness) = self.roughness {
             context.set_uniform_f32(roughness.index, material.roughness);
         }
-    }
-}
-
-impl MaterialShaderInfo {
-    pub fn from_program<Context: RenderingContext>(
-        program: &ShaderProgram<RenderingContext = Context>,
-    ) -> Result<MaterialShaderInfo, ShaderInfoError> {
-        Ok(MaterialShaderInfo {
-            position: ShaderParamInfo::attribute(program, "position")?,
-            normal: ShaderParamInfo::attribute(program, "normal")?,
-            projection: ShaderParamInfo::uniform(program, "projection")?,
-            model_view: ShaderParamInfo::uniform(program, "modelView")?,
-            base_color: ShaderParamInfo::uniform(program, "material.baseColor").ok(),
-            metal_factor: ShaderParamInfo::uniform(program, "material.metal").ok(),
-            roughness: ShaderParamInfo::uniform(program, "material.roughness").ok(),
-            lights: ShaderLightInfo::from_program(program),
-        })
     }
 }
 

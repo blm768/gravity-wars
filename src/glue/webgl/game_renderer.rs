@@ -4,6 +4,7 @@ use std::rc::Rc;
 use web_sys::WebGlRenderingContext;
 
 use crate::glue::webgl::WebGlContext;
+use crate::rendering::line::LineShader;
 use crate::rendering::material::MaterialShader;
 use crate::state::GameState;
 use crate::state_renderer::GameRenderer;
@@ -12,16 +13,19 @@ use crate::state_renderer::GameRenderer;
 pub struct WebGlRenderer {
     context: Rc<WebGlContext>,
     material_shader: MaterialShader<WebGlContext>,
+    line_shader: LineShader<WebGlContext>,
 }
 
 impl WebGlRenderer {
     pub fn new(
         context: Rc<WebGlContext>,
         material_shader: MaterialShader<WebGlContext>,
+        line_shader: LineShader<WebGlContext>,
     ) -> WebGlRenderer {
         WebGlRenderer {
             context,
             material_shader,
+            line_shader,
         }
     }
 
@@ -50,6 +54,10 @@ impl GameRenderer for WebGlRenderer {
 
     fn material_shader(&self) -> &MaterialShader<WebGlContext> {
         &self.material_shader
+    }
+
+    fn line_shader(&self) -> &LineShader<WebGlContext> {
+        &self.line_shader
     }
 
     fn render(&self, state: &mut GameState) -> Result<(), Box<Error>> {

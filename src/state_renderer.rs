@@ -1,14 +1,17 @@
+use std::cell::RefCell;
 use std::fmt::Debug;
 
 use cgmath::Matrix4;
+use std::cell::Cell;
 use std::error::Error;
 use std::rc::Rc;
 
 use crate::rendering::context::RenderingContext;
 use crate::rendering::light::PointLight;
-use crate::rendering::material::BoundMaterialShader;
-use crate::rendering::material::{MaterialShader, MaterialWorldContext};
+use crate::rendering::line::{BoundLineShader, LineShader, LineWorldContext, PolyLine};
+use crate::rendering::material::{BoundMaterialShader, MaterialShader, MaterialWorldContext};
 use crate::rendering::mesh::Mesh;
+use crate::rendering::Rgb;
 use crate::state::{Entity, EntityRenderer, GameState};
 
 #[derive(Debug)]
@@ -38,11 +41,47 @@ impl<Context: RenderingContext> EntityRenderer for MeshRenderer<Context> {
     }
 }
 
+#[derive(Debug)]
+pub struct MissileTrailRenderer<Context: RenderingContext> {
+    line: RefCell<PolyLine<Context>>,
+    data_version: Cell<usize>,
+    renderer: Rc<GameRenderer<Context = Context>>,
+}
+
+impl<Context: RenderingContext> MissileTrailRenderer<Context> {
+    pub fn new(renderer: Rc<GameRenderer<Context = Context>>, color: Rgb) -> Result<Self, ()> {
+        let line = PolyLine::new(renderer.context().make_attribute_buffer()?, color);
+        Ok(MissileTrailRenderer {
+            line: RefCell::new(line),
+            data_version: Cell::new(0),
+            renderer,
+        })
+    }
+}
+
+impl<Context: RenderingContext> EntityRenderer for MissileTrailRenderer<Context> {
+    fn render(&self, entity: &Entity, world: &GameState) {
+        if let Some(ref trail) = entity.missile_trail {
+            if trail.data_version() != self.data_version.get() {
+                self.line.borrow_mut().set_positions(trail.positions());
+                self.data_version.set(trail.data_version());
+            }
+
+            let context = self.renderer.context();
+            let line_shader = self.renderer.line_shader();
+            let bound_shader = BoundLineShader::new(context, line_shader, world).unwrap();
+
+            self.line.borrow().draw(&bound_shader);
+        }
+    }
+}
+
 pub trait GameRenderer: Debug {
     type Context: RenderingContext;
 
     fn context(&self) -> &Self::Context;
     fn material_shader(&self) -> &MaterialShader<Self::Context>;
+    fn line_shader(&self) -> &LineShader<Self::Context>;
     fn render(&self, state: &mut GameState) -> Result<(), Box<Error>>;
 }
 
@@ -53,5 +92,11 @@ impl MaterialWorldContext for GameState {
 
     fn light(&self) -> &PointLight {
         &self.light
+    }
+}
+
+impl LineWorldContext for GameState {
+    fn projection(&self) -> Matrix4<f32> {
+        self.camera.projection().into()
     }
 }
