@@ -25,11 +25,11 @@ js-sys = "0.3.5"
 rgb = "0.8"
 
 [dependencies.wasm-bindgen]
-version = "0.2.28"
+version = "0.2.29"
 features = ["nightly"]
 
 [dependencies.web-sys]
-version = "0.3.5"
+version = "0.3.6"
 features = [
     "Document",
     "Element",
