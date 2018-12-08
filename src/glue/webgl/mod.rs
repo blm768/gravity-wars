@@ -139,6 +139,8 @@ impl ShaderProgram {
 }
 
 impl shader::ShaderProgram for ShaderProgram {
+    type RenderingContext = WebGlContext;
+
     fn attribute_names(&self) -> Vec<String> {
         self.attributes
             .keys()
@@ -270,6 +272,7 @@ fn to_gl_element_type(attr_type: IndexType) -> u32 {
 impl RenderingContext for WebGlContext {
     type AttributeBuffer = buffer::AttributeBuffer;
     type IndexBuffer = buffer::IndexBuffer;
+    type ShaderProgram = ShaderProgram;
 
     fn make_attribute_buffer(&self) -> Result<Self::AttributeBuffer, ()> {
         Self::AttributeBuffer::new(self.gl_context.clone()).ok_or(())

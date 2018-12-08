@@ -1,4 +1,5 @@
 use rendering;
+use rendering::context::RenderingContext;
 use rendering::light::{PointLight, ShaderLightInfo};
 use rendering::shader::{ShaderInfoError, ShaderParamInfo, ShaderProgram};
 use rendering::Rgba;
@@ -25,7 +26,11 @@ pub struct MaterialShaderInfo {
 }
 
 impl MaterialShaderInfo {
-    pub fn bind_material(&self, material: &Material, program: &ShaderProgram) {
+    pub fn bind_material<Context: RenderingContext>(
+        &self,
+        material: &Material,
+        program: &ShaderProgram<RenderingContext = Context>,
+    ) {
         if let Some(ref base_color) = self.base_color {
             program.set_uniform_vec4(
                 base_color.index,
@@ -42,7 +47,9 @@ impl MaterialShaderInfo {
 }
 
 impl MaterialShaderInfo {
-    pub fn from_program(program: &ShaderProgram) -> Result<MaterialShaderInfo, ShaderInfoError> {
+    pub fn from_program<Context: RenderingContext>(
+        program: &ShaderProgram<RenderingContext = Context>,
+    ) -> Result<MaterialShaderInfo, ShaderInfoError> {
         Ok(MaterialShaderInfo {
             position: ShaderParamInfo::attribute(program, "position")?,
             normal: ShaderParamInfo::attribute(program, "normal")?,
@@ -57,24 +64,24 @@ impl MaterialShaderInfo {
 }
 
 #[derive(Debug)]
-pub struct MaterialShader {
-    pub program: Box<ShaderProgram>,
+pub struct MaterialShader<Context: RenderingContext> {
+    pub program: Context::ShaderProgram,
     pub info: MaterialShaderInfo,
 }
 
-impl MaterialShader {
-    pub fn new(program: Box<ShaderProgram>) -> Result<MaterialShader, ShaderInfoError> {
-        let info = MaterialShaderInfo::from_program(&*program)?;
+impl<Context: RenderingContext> MaterialShader<Context> {
+    pub fn new(program: Context::ShaderProgram) -> Result<Self, ShaderInfoError> {
+        let info = MaterialShaderInfo::from_program(&program)?;
         Ok(MaterialShader { program, info })
     }
 
     pub fn bind_material(&self, material: &Material) {
-        self.info.bind_material(material, &*self.program);
+        self.info.bind_material(material, &self.program);
     }
 
     pub fn bind_light(&self, light: &PointLight) {
         if let Some(ref light_info) = self.info.lights {
-            light_info.bind_light(light, &*self.program);
+            light_info.bind_light(light, &self.program);
         }
     }
 }

@@ -6,17 +6,21 @@ use web_sys::WebGlRenderingContext;
 
 use glue::webgl::WebGlContext;
 use rendering::material::MaterialShader;
+use rendering::shader::ShaderProgram;
 use state::GameState;
 use state_renderer::GameRenderer;
 
 #[derive(Debug)]
 pub struct WebGlRenderer {
     context: Rc<WebGlContext>,
-    material_shader: MaterialShader,
+    material_shader: MaterialShader<WebGlContext>,
 }
 
 impl WebGlRenderer {
-    pub fn new(context: Rc<WebGlContext>, material_shader: MaterialShader) -> WebGlRenderer {
+    pub fn new(
+        context: Rc<WebGlContext>,
+        material_shader: MaterialShader<WebGlContext>,
+    ) -> WebGlRenderer {
         WebGlRenderer {
             context,
             material_shader,
@@ -46,7 +50,7 @@ impl GameRenderer for WebGlRenderer {
         &self.context
     }
 
-    fn material_shader(&self) -> &MaterialShader {
+    fn material_shader(&self) -> &MaterialShader<WebGlContext> {
         &self.material_shader
     }
 

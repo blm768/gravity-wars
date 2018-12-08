@@ -120,7 +120,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         context.gl_context().clone(),
         [vertex_shader, fragment_shader].iter(),
     )?;
-    let mat_shader = MaterialShader::new(Box::new(program)).map_err(|e| format!("{:?}", e))?;
+    let mat_shader = MaterialShader::new(program).map_err(|e| format!("{:?}", e))?;
 
     let renderer = Rc::new(WebGlRenderer::new(Rc::clone(&context), mat_shader));
     renderer.configure_context();

@@ -2,6 +2,8 @@ use std::fmt::Debug;
 
 use cgmath::{Matrix4, Vector3, Vector4};
 
+use rendering::context::RenderingContext;
+
 #[derive(Clone, Debug)]
 pub enum ShaderInfoError {
     MissingAttribute(String),
@@ -14,8 +16,8 @@ pub struct ShaderParamInfo {
 }
 
 impl ShaderParamInfo {
-    pub fn attribute(
-        shader: &ShaderProgram,
+    pub fn attribute<Context: RenderingContext>(
+        shader: &ShaderProgram<RenderingContext = Context>,
         name: &str,
     ) -> Result<ShaderParamInfo, ShaderInfoError> {
         shader
@@ -23,7 +25,10 @@ impl ShaderParamInfo {
             .ok_or_else(|| ShaderInfoError::MissingAttribute(String::from(name)))
     }
 
-    pub fn uniform(shader: &ShaderProgram, name: &str) -> Result<ShaderParamInfo, ShaderInfoError> {
+    pub fn uniform<Context: RenderingContext>(
+        shader: &ShaderProgram<RenderingContext = Context>,
+        name: &str,
+    ) -> Result<ShaderParamInfo, ShaderInfoError> {
         shader
             .uniform(name)
             .ok_or_else(|| ShaderInfoError::MissingUniform(String::from(name)))
@@ -31,6 +36,8 @@ impl ShaderParamInfo {
 }
 
 pub trait ShaderProgram: Debug {
+    type RenderingContext: RenderingContext + ?Sized;
+
     fn attribute_names(&self) -> Vec<String>;
     fn uniform_names(&self) -> Vec<String>;
     fn attribute(&self, name: &str) -> Option<ShaderParamInfo>;

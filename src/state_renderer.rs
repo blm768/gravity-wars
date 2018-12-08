@@ -7,6 +7,7 @@ use std::rc::Rc;
 use rendering::context::RenderingContext;
 use rendering::material::MaterialShader;
 use rendering::mesh::Mesh;
+use rendering::shader::ShaderProgram;
 use state::{Entity, EntityRenderer, GameState};
 
 #[derive(Debug)]
@@ -37,6 +38,6 @@ pub trait GameRenderer: Debug {
     type Context: RenderingContext;
 
     fn context(&self) -> &Self::Context;
-    fn material_shader(&self) -> &MaterialShader;
+    fn material_shader(&self) -> &MaterialShader<Self::Context>;
     fn render(&self, state: &GameState) -> Result<(), Box<Error>>;
 }

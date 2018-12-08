@@ -21,7 +21,7 @@ impl<Context: RenderingContext> Mesh<Context> {
         &self.primitives
     }
 
-    pub fn draw(&self, context: &Context, mat_shader: &MaterialShader) {
+    pub fn draw(&self, context: &Context, mat_shader: &MaterialShader<Context>) {
         for p in self.primitives.iter() {
             p.draw(context, mat_shader);
         }
@@ -54,7 +54,7 @@ impl<Context: RenderingContext> Primitive<Context> {
     /// Binds each primitive's buffers and makes the appropriate WebGL draw calls.
     /// The projection and modelview matrix uniforms must already be bound.
     // TODO: break out a separate bind() method?
-    pub fn draw(&self, context: &Context, mat_shader: &MaterialShader) {
+    pub fn draw(&self, context: &Context, mat_shader: &MaterialShader<Context>) {
         mat_shader.bind_material(&self.material);
         self.positions.bind(mat_shader.info.position.index);
         self.normals.bind(mat_shader.info.normal.index);

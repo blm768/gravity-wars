@@ -1,6 +1,7 @@
 use cgmath::Vector3;
 
 use rendering;
+use rendering::context::RenderingContext;
 use rendering::shader::{ShaderParamInfo, ShaderProgram};
 use rendering::Rgb;
 
@@ -16,14 +17,20 @@ pub struct ShaderLightInfo {
 }
 
 impl ShaderLightInfo {
-    pub fn from_program(program: &ShaderProgram) -> Option<ShaderLightInfo> {
+    pub fn from_program<Context: RenderingContext>(
+        program: &ShaderProgram<RenderingContext = Context>,
+    ) -> Option<ShaderLightInfo> {
         Some(ShaderLightInfo {
             color: program.uniform("light.color")?,
             position: program.uniform("light.position")?,
         })
     }
 
-    pub fn bind_light(&self, light: &PointLight, program: &ShaderProgram) {
+    pub fn bind_light<Context: RenderingContext>(
+        &self,
+        light: &PointLight,
+        program: &ShaderProgram<RenderingContext = Context>,
+    ) {
         program.set_uniform_vec3(self.color.index, rendering::rgb_as_vec3(&light.color));
         program.set_uniform_vec3(self.position.index, light.position);
     }
