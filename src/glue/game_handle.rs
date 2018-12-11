@@ -49,11 +49,9 @@ impl GameHandle {
     /// Registers a camera pan event with the given X and Y deltas (in pixels)
     #[wasm_bindgen(js_name = onPan)]
     pub fn on_pan(&mut self, x: f32, y: f32) {
-        let projection = self
-            .game_state
-            .borrow()
-            .camera()
-            .projection(self.renderer.context().aspect_ratio());
+        let camera = &mut self.game_state.borrow_mut().camera;
+        camera.aspect_ratio = self.renderer.context().aspect_ratio();
+        let projection = camera.projection();
         let pan_factor =
             (projection.top - projection.bottom) / self.renderer.context().height() as f32;
         let delta = Vector2::new(x * pan_factor, y * pan_factor);

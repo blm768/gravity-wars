@@ -71,10 +71,6 @@ impl GameState {
         self.entities.iter()
     }
 
-    pub fn camera(&self) -> &Camera {
-        &self.camera
-    }
-
     pub fn get_ship(&self) -> Option<&Entity> {
         self.entities.iter().find(|e| e.ship.is_some())
     }

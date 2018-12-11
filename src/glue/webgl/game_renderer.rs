@@ -54,21 +54,19 @@ impl GameRenderer for WebGlRenderer {
         &self.material_shader
     }
 
-    fn render(&self, state: &GameState) -> Result<(), Box<Error>> {
+    fn render(&self, state: &mut GameState) -> Result<(), Box<Error>> {
         let mat_shader = &self.material_shader;
 
         mat_shader.program.activate();
 
         self.context.set_viewport();
+        state.camera.aspect_ratio = self.context.aspect_ratio();
         self.gl_context().clear_color(0.0, 0.0, 0.0, 1.0);
         self.gl_context().clear(
             WebGlRenderingContext::COLOR_BUFFER_BIT | WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
 
-        let projection: Matrix4<f32> = state
-            .camera()
-            .projection(self.context.aspect_ratio())
-            .into();
+        let projection: Matrix4<f32> = state.camera.projection().into();
 
         mat_shader
             .program

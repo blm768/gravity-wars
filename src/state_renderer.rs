@@ -39,5 +39,5 @@ pub trait GameRenderer: Debug {
 
     fn context(&self) -> &Self::Context;
     fn material_shader(&self) -> &MaterialShader<Self::Context>;
-    fn render(&self, state: &GameState) -> Result<(), Box<Error>>;
+    fn render(&self, state: &mut GameState) -> Result<(), Box<Error>>;
 }

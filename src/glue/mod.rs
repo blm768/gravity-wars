@@ -155,7 +155,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     let renderer_clone = Rc::clone(&renderer);
     let render_frame = move |_milliseconds: f64| {
         renderer_clone
-            .render(&render_state.borrow())
+            .render(&mut render_state.borrow_mut())
             .unwrap_or_else(|e| log(&e.to_string()));
     };
 
