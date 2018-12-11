@@ -1,12 +1,10 @@
 use std::error::Error;
 use std::rc::Rc;
 
-use cgmath::Matrix4;
 use web_sys::WebGlRenderingContext;
 
 use glue::webgl::WebGlContext;
 use rendering::material::MaterialShader;
-use rendering::shader::ShaderProgram;
 use state::GameState;
 use state_renderer::GameRenderer;
 
@@ -55,10 +53,6 @@ impl GameRenderer for WebGlRenderer {
     }
 
     fn render(&self, state: &mut GameState) -> Result<(), Box<Error>> {
-        let mat_shader = &self.material_shader;
-
-        mat_shader.program.activate();
-
         self.context.set_viewport();
         state.camera.aspect_ratio = self.context.aspect_ratio();
         self.gl_context().clear_color(0.0, 0.0, 0.0, 1.0);
@@ -66,17 +60,9 @@ impl GameRenderer for WebGlRenderer {
             WebGlRenderingContext::COLOR_BUFFER_BIT | WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
 
-        let projection: Matrix4<f32> = state.camera.projection().into();
-
-        mat_shader
-            .program
-            .set_uniform_mat4(mat_shader.info.projection.index, projection);
-
-        mat_shader.bind_light(&state.light);
-
         for entity in state.iter_entities() {
             if let Some(ref renderer) = entity.renderer {
-                renderer.render(entity);
+                renderer.render(entity, state);
             }
         }
 

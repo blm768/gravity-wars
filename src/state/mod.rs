@@ -34,7 +34,7 @@ impl Entity {
 }
 
 pub trait EntityRenderer: Debug {
-    fn render(&self, entity: &Entity);
+    fn render(&self, entity: &Entity, world: &GameState);
 }
 
 #[derive(Clone, Debug)]

@@ -5,9 +5,10 @@ use std::error::Error;
 use std::rc::Rc;
 
 use rendering::context::RenderingContext;
-use rendering::material::MaterialShader;
+use rendering::light::PointLight;
+use rendering::material::BoundMaterialShader;
+use rendering::material::{MaterialShader, MaterialWorldContext};
 use rendering::mesh::Mesh;
-use rendering::shader::ShaderProgram;
 use state::{Entity, EntityRenderer, GameState};
 
 #[derive(Debug)]
@@ -23,14 +24,17 @@ impl<Context: RenderingContext> MeshRenderer<Context> {
 }
 
 impl<Context: RenderingContext> EntityRenderer for MeshRenderer<Context> {
-    fn render(&self, entity: &Entity) {
+    fn render(&self, entity: &Entity, world: &GameState) {
+        let context = self.renderer.context();
+        let mat_shader = self.renderer.material_shader();
+        let bound_shader = BoundMaterialShader::new(context, mat_shader, world).unwrap();
+
         let model_transform = Matrix4::from_translation(entity.position);
-        self.renderer.material_shader().program.set_uniform_mat4(
+        bound_shader.set_uniform_mat4(
             self.renderer.material_shader().info.model_view.index,
             model_transform,
         );
-        self.mesh
-            .draw(self.renderer.context(), self.renderer.material_shader());
+        self.mesh.draw(&bound_shader);
     }
 }
 
@@ -40,4 +44,14 @@ pub trait GameRenderer: Debug {
     fn context(&self) -> &Self::Context;
     fn material_shader(&self) -> &MaterialShader<Self::Context>;
     fn render(&self, state: &mut GameState) -> Result<(), Box<Error>>;
+}
+
+impl MaterialWorldContext for GameState {
+    fn projection(&self) -> Matrix4<f32> {
+        self.camera.projection().into()
+    }
+
+    fn light(&self) -> &PointLight {
+        &self.light
+    }
 }

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use rendering::buffer::{AttributeBuffer, Buffer, BufferData, ElementBinding};
 use rendering::buffer::{VertexAttributeBinding, VertexIndexData};
 use rendering::context::RenderingContext;
-use rendering::material::{Material, MaterialShader};
+use rendering::material::{BoundMaterialShader, Material};
 
 pub mod gltf;
 
@@ -21,9 +21,9 @@ impl<Context: RenderingContext> Mesh<Context> {
         &self.primitives
     }
 
-    pub fn draw(&self, context: &Context, mat_shader: &MaterialShader<Context>) {
+    pub fn draw(&self, shader: &BoundMaterialShader<Context>) {
         for p in self.primitives.iter() {
-            p.draw(context, mat_shader);
+            p.draw(shader);
         }
     }
 }
@@ -54,13 +54,14 @@ impl<Context: RenderingContext> Primitive<Context> {
     /// Binds each primitive's buffers and makes the appropriate WebGL draw calls.
     /// The projection and modelview matrix uniforms must already be bound.
     // TODO: break out a separate bind() method?
-    pub fn draw(&self, context: &Context, mat_shader: &MaterialShader<Context>) {
-        mat_shader.bind_material(&self.material);
-        self.positions.bind(mat_shader.info.position.index);
-        self.normals.bind(mat_shader.info.normal.index);
+    pub fn draw(&self, shader: &BoundMaterialShader<Context>) {
+        use std::ops::Deref; // TODO: why do we need to call deref() instead of using &*shader?
+        shader.info().bind_material(&self.material, shader.deref());
+        self.positions.bind(shader.info().position.index);
+        self.normals.bind(shader.info().normal.index);
         match self.indices {
-            Some(ref indices) => context.draw_indexed_triangles(indices),
-            None => context.draw_triangles(self.positions.binding.count),
+            Some(ref indices) => shader.draw_indexed_triangles(indices),
+            None => shader.draw_triangles(self.positions.binding.count),
         }
     }
 }

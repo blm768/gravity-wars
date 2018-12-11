@@ -1,6 +1,13 @@
+use std::ops::Deref;
+use std::rc::Rc;
+
+use cgmath::Matrix4;
+
 use rendering;
 use rendering::context::RenderingContext;
-use rendering::light::{PointLight, ShaderLightInfo};
+use rendering::light::PointLight;
+use rendering::light::ShaderLightInfo;
+use rendering::shader::{BoundShader, ShaderBindError};
 use rendering::shader::{ShaderInfoError, ShaderParamInfo, ShaderProgram};
 use rendering::Rgba;
 
@@ -11,7 +18,7 @@ pub struct Material {
     pub roughness: f32,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MaterialShaderInfo {
     pub position: ShaderParamInfo,
     pub normal: ShaderParamInfo,
@@ -29,19 +36,19 @@ impl MaterialShaderInfo {
     pub fn bind_material<Context: RenderingContext>(
         &self,
         material: &Material,
-        program: &ShaderProgram<RenderingContext = Context>,
+        context: &BoundShader<Context>,
     ) {
         if let Some(ref base_color) = self.base_color {
-            program.set_uniform_vec4(
+            context.set_uniform_vec4(
                 base_color.index,
                 rendering::rgba_as_vec4(&material.base_color),
             );
         }
         if let Some(ref metal_factor) = self.metal_factor {
-            program.set_uniform_f32(metal_factor.index, material.metal_factor);
+            context.set_uniform_f32(metal_factor.index, material.metal_factor);
         }
         if let Some(ref roughness) = self.roughness {
-            program.set_uniform_f32(roughness.index, material.roughness);
+            context.set_uniform_f32(roughness.index, material.roughness);
         }
     }
 }
@@ -65,23 +72,58 @@ impl MaterialShaderInfo {
 
 #[derive(Debug)]
 pub struct MaterialShader<Context: RenderingContext> {
-    pub program: Context::ShaderProgram,
+    pub program: Rc<Context::ShaderProgram>,
     pub info: MaterialShaderInfo,
 }
 
 impl<Context: RenderingContext> MaterialShader<Context> {
     pub fn new(program: Context::ShaderProgram) -> Result<Self, ShaderInfoError> {
         let info = MaterialShaderInfo::from_program(&program)?;
-        Ok(MaterialShader { program, info })
+        Ok(MaterialShader {
+            program: Rc::new(program),
+            info,
+        })
     }
+}
 
-    pub fn bind_material(&self, material: &Material) {
-        self.info.bind_material(material, &self.program);
-    }
+pub trait MaterialWorldContext {
+    fn projection(&self) -> Matrix4<f32>;
+    fn light(&self) -> &PointLight;
+}
 
-    pub fn bind_light(&self, light: &PointLight) {
-        if let Some(ref light_info) = self.info.lights {
-            light_info.bind_light(light, &self.program);
+pub struct BoundMaterialShader<Context: RenderingContext> {
+    bound_shader: Context::BoundShader,
+    info: MaterialShaderInfo, // TODO: give this a lifetime bound and just borrow here?
+}
+
+impl<Context: RenderingContext> BoundMaterialShader<Context> {
+    pub fn new(
+        context: &Context,
+        shader: &MaterialShader<Context>,
+        world: &MaterialWorldContext,
+    ) -> Result<Self, ShaderBindError> {
+        let bound_shader = context.bind_shader(Rc::clone(&shader.program))?;
+        bound_shader.set_uniform_mat4(shader.info.projection.index, world.projection());
+        if let Some(ref lights) = shader.info.lights {
+            lights.bind_light(world.light(), &bound_shader);
         }
+        Ok(BoundMaterialShader {
+            bound_shader,
+            info: shader.info.clone(),
+        })
+    }
+
+    pub fn info(&self) -> &MaterialShaderInfo {
+        &self.info
+    }
+}
+
+impl<Context> Deref for BoundMaterialShader<Context>
+where
+    Context: RenderingContext,
+{
+    type Target = BoundShader<Context>;
+    fn deref(&self) -> &Self::Target {
+        &self.bound_shader
     }
 }

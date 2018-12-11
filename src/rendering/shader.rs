@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use cgmath::{Matrix4, Vector3, Vector4};
 
 use rendering::context::RenderingContext;
+use rendering::mesh::ElementIndices;
 
 #[derive(Clone, Debug)]
 pub enum ShaderInfoError {
@@ -42,10 +43,20 @@ pub trait ShaderProgram: Debug {
     fn uniform_names(&self) -> Vec<String>;
     fn attribute(&self, name: &str) -> Option<ShaderParamInfo>;
     fn uniform(&self, name: &str) -> Option<ShaderParamInfo>;
+}
 
-    fn activate(&self);
+pub trait BoundShader<Context: RenderingContext + ?Sized> {
+    fn draw_triangles(&self, count: usize);
+    fn draw_indexed_triangles(&self, indices: &ElementIndices<Context>);
+
     fn set_uniform_f32(&self, index: usize, value: f32);
     fn set_uniform_mat4(&self, index: usize, value: Matrix4<f32>);
     fn set_uniform_vec3(&self, index: usize, value: Vector3<f32>);
     fn set_uniform_vec4(&self, index: usize, value: Vector4<f32>);
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ShaderBindError {
+    InvalidContextForShader,
+    CannotBindMoreShaders,
 }

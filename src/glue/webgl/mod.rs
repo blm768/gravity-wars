@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -9,7 +10,7 @@ use rendering::buffer::IndexType;
 use rendering::context::RenderingContext;
 use rendering::mesh::ElementIndices;
 use rendering::shader;
-use rendering::shader::ShaderParamInfo;
+use rendering::shader::{BoundShader, ShaderBindError, ShaderParamInfo};
 
 pub mod buffer;
 pub mod game_renderer;
@@ -93,6 +94,10 @@ impl ShaderProgram {
         }
     }
 
+    pub fn bind(&self) {
+        self.context.use_program(Some(&self.program))
+    }
+
     fn get_attribute_info(
         context: &WebGlRenderingContext,
         program: &WebGlProgram,
@@ -166,36 +171,6 @@ impl shader::ShaderProgram for ShaderProgram {
             .find(|(_, inf)| inf.name.as_ref() == name)
             .map(|(i, _)| ShaderParamInfo { index: i })
     }
-
-    fn activate(&self) {
-        self.context.use_program(Some(&self.program));
-    }
-
-    fn set_uniform_f32(&self, index: usize, value: f32) {
-        self.context
-            .uniform1f(Some(&self.uniforms[index].location), value);
-    }
-
-    fn set_uniform_mat4(&self, index: usize, mut value: Matrix4<f32>) {
-        let raw: &mut [f32; 16] = value.as_mut();
-        self.context.uniform_matrix4fv_with_f32_array(
-            Some(&self.uniforms[index].location),
-            false,
-            raw,
-        );
-    }
-
-    fn set_uniform_vec3(&self, index: usize, mut value: Vector3<f32>) {
-        let raw: &mut [f32; 3] = value.as_mut();
-        self.context
-            .uniform3fv_with_f32_array(Some(&self.uniforms[index].location), raw);
-    }
-
-    fn set_uniform_vec4(&self, index: usize, mut value: Vector4<f32>) {
-        let raw: &mut [f32; 4] = value.as_mut();
-        self.context
-            .uniform4fv_with_f32_array(Some(&self.uniforms[index].location), raw);
-    }
 }
 
 #[derive(Debug)]
@@ -203,6 +178,7 @@ pub struct WebGlContext {
     canvas_element: Element,
     canvas: HtmlCanvasElement,
     gl_context: Rc<WebGlRenderingContext>,
+    shader_bound: Cell<bool>,
 }
 
 impl WebGlContext {
@@ -215,6 +191,7 @@ impl WebGlContext {
             canvas_element,
             canvas,
             gl_context: Rc::new(gl_context),
+            shader_bound: Cell::new(false),
         }
     }
 
@@ -273,6 +250,7 @@ impl RenderingContext for WebGlContext {
     type AttributeBuffer = buffer::AttributeBuffer;
     type IndexBuffer = buffer::IndexBuffer;
     type ShaderProgram = ShaderProgram;
+    type BoundShader = WebGlBoundShader;
 
     fn make_attribute_buffer(&self) -> Result<Self::AttributeBuffer, ()> {
         Self::AttributeBuffer::new(self.gl_context.clone()).ok_or(())
@@ -282,18 +260,69 @@ impl RenderingContext for WebGlContext {
         Self::IndexBuffer::new(self.gl_context.clone()).ok_or(())
     }
 
+    fn bind_shader(
+        &self,
+        shader: Rc<Self::ShaderProgram>,
+    ) -> Result<Self::BoundShader, ShaderBindError> {
+        if self.shader_bound.get() {
+            return Err(ShaderBindError::CannotBindMoreShaders);
+        }
+        if !Rc::ptr_eq(&shader.context, &self.gl_context) {
+            return Err(ShaderBindError::InvalidContextForShader);
+        }
+
+        shader.bind();
+        Ok(WebGlBoundShader {
+            context: Rc::clone(&self.gl_context),
+            shader,
+        })
+    }
+}
+
+pub struct WebGlBoundShader {
+    context: Rc<WebGlRenderingContext>,
+    shader: Rc<ShaderProgram>,
+}
+
+impl BoundShader<WebGlContext> for WebGlBoundShader {
     fn draw_triangles(&self, count: usize) {
-        self.gl_context
+        self.context
             .draw_arrays(WebGlRenderingContext::TRIANGLES, 0, count as i32);
     }
 
-    fn draw_indexed_triangles(&self, indices: &ElementIndices<Self>) {
+    fn draw_indexed_triangles(&self, indices: &ElementIndices<WebGlContext>) {
         indices.buffer.bind();
-        self.gl_context.draw_elements_with_i32(
+        self.context.draw_elements_with_i32(
             WebGlRenderingContext::TRIANGLES,
             indices.binding.count as i32,
             to_gl_element_type(indices.binding.index_type),
             indices.binding.offset as i32,
         );
+    }
+
+    fn set_uniform_f32(&self, index: usize, value: f32) {
+        self.context
+            .uniform1f(Some(&self.shader.uniforms[index].location), value);
+    }
+
+    fn set_uniform_mat4(&self, index: usize, mut value: Matrix4<f32>) {
+        let raw: &mut [f32; 16] = value.as_mut();
+        self.context.uniform_matrix4fv_with_f32_array(
+            Some(&self.shader.uniforms[index].location),
+            false,
+            raw,
+        );
+    }
+
+    fn set_uniform_vec3(&self, index: usize, mut value: Vector3<f32>) {
+        let raw: &mut [f32; 3] = value.as_mut();
+        self.context
+            .uniform3fv_with_f32_array(Some(&self.shader.uniforms[index].location), raw);
+    }
+
+    fn set_uniform_vec4(&self, index: usize, mut value: Vector4<f32>) {
+        let raw: &mut [f32; 4] = value.as_mut();
+        self.context
+            .uniform4fv_with_f32_array(Some(&self.shader.uniforms[index].location), raw);
     }
 }
