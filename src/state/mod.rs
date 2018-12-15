@@ -3,10 +3,10 @@ use std::rc::Rc;
 
 use cgmath::Vector3;
 
-use rendering::light::PointLight;
-use rendering::scene::Camera;
-use rendering::Rgb;
-use state::event::{InputEvent, InputEventError};
+use crate::rendering::light::PointLight;
+use crate::rendering::scene::Camera;
+use crate::rendering::Rgb;
+use crate::state::event::{InputEvent, InputEventError};
 
 pub mod event;
 pub mod mapgen;

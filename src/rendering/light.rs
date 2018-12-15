@@ -1,9 +1,9 @@
 use cgmath::Vector3;
 
-use rendering;
-use rendering::context::RenderingContext;
-use rendering::shader::{BoundShader, ShaderParamInfo, ShaderProgram};
-use rendering::Rgb;
+use crate::rendering;
+use crate::rendering::context::RenderingContext;
+use crate::rendering::shader::{BoundShader, ShaderParamInfo, ShaderProgram};
+use crate::rendering::Rgb;
 
 pub struct PointLight {
     pub color: Rgb,

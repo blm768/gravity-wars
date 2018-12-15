@@ -13,17 +13,17 @@ use web_sys::{WebGlRenderingContext, WebGlShader};
 
 use gltf::Gltf;
 
-use glue::asset::{AssetData, AssetLoader, FetchError};
-use glue::callback::{AnimationFrameCallback, IntervalCallback};
-use glue::game_handle::GameHandle;
-use glue::webgl::game_renderer::WebGlRenderer;
-use glue::webgl::{ShaderType, WebGlContext};
-use rendering::material::MaterialShader;
-use rendering::mesh::gltf::GltfLoader;
-use state::event::InputEvent;
-use state::mapgen;
-use state::GameState;
-use state_renderer::{GameRenderer, MeshRenderer};
+use crate::glue::asset::{AssetData, AssetLoader, FetchError};
+use crate::glue::callback::{AnimationFrameCallback, IntervalCallback};
+use crate::glue::game_handle::GameHandle;
+use crate::glue::webgl::game_renderer::WebGlRenderer;
+use crate::glue::webgl::{ShaderType, WebGlContext};
+use crate::rendering::material::MaterialShader;
+use crate::rendering::mesh::gltf::GltfLoader;
+use crate::state::event::InputEvent;
+use crate::state::mapgen;
+use crate::state::GameState;
+use crate::state_renderer::{GameRenderer, MeshRenderer};
 
 pub mod asset;
 pub mod callback;

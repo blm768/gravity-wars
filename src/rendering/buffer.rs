@@ -5,7 +5,7 @@ use std::slice;
 
 use cgmath::Vector3;
 
-use rendering::context;
+use crate::rendering::context;
 
 #[derive(Clone, Copy, Debug)]
 pub enum AttributeType {

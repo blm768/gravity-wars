@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
-use rendering::buffer::{AttributeBuffer, Buffer, BufferData, ElementBinding};
-use rendering::buffer::{VertexAttributeBinding, VertexIndexData};
-use rendering::context::RenderingContext;
-use rendering::material::{BoundMaterialShader, Material};
+use crate::rendering::buffer::{AttributeBuffer, Buffer, BufferData, ElementBinding};
+use crate::rendering::buffer::{VertexAttributeBinding, VertexIndexData};
+use crate::rendering::context::RenderingContext;
+use crate::rendering::material::{BoundMaterialShader, Material};
 
 pub mod gltf;
 

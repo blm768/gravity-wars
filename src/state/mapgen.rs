@@ -2,12 +2,12 @@ use std::rc::Rc;
 
 use cgmath::Vector3;
 
-use meshgen;
-use rendering::context::RenderingContext;
-use rendering::material::Material;
-use rendering::Rgba;
-use state::{Entity, EntityRenderer, GameState, Ship};
-use state_renderer::{GameRenderer, MeshRenderer};
+use crate::meshgen;
+use crate::rendering::context::RenderingContext;
+use crate::rendering::material::Material;
+use crate::rendering::Rgba;
+use crate::state::{Entity, EntityRenderer, GameState, Ship};
+use crate::state_renderer::{GameRenderer, MeshRenderer};
 
 pub fn generate_map(_state: &mut GameState) {}
 

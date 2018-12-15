@@ -6,11 +6,11 @@ use gltf::accessor::DataType;
 use gltf::buffer::Source;
 use gltf::{Accessor, Gltf, Semantic};
 
-use rendering::buffer::{AttributeType, Buffer, ElementBinding, VertexAttributeBinding};
-use rendering::context::RenderingContext;
-use rendering::material::Material;
-use rendering::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
-use rendering::Rgba;
+use crate::rendering::buffer::{AttributeType, Buffer, ElementBinding, VertexAttributeBinding};
+use crate::rendering::context::RenderingContext;
+use crate::rendering::material::Material;
+use crate::rendering::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
+use crate::rendering::Rgba;
 
 pub struct GltfLoader<'a, Context: RenderingContext> {
     context: Rc<Context>,

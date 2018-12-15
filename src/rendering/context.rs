@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use rendering::buffer;
-use rendering::shader;
-use rendering::shader::{BoundShader, ShaderBindError};
+use crate::rendering::buffer;
+use crate::rendering::shader;
+use crate::rendering::shader::{BoundShader, ShaderBindError};
 
 pub trait RenderingContext: Debug {
     type AttributeBuffer: buffer::AttributeBuffer<RenderingContext = Self> + 'static;

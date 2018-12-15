@@ -6,11 +6,11 @@ use cgmath::{Matrix4, Vector3, Vector4};
 use web_sys::{Element, HtmlCanvasElement};
 use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLocation};
 
-use rendering::buffer::IndexType;
-use rendering::context::RenderingContext;
-use rendering::mesh::ElementIndices;
-use rendering::shader;
-use rendering::shader::{BoundShader, ShaderBindError, ShaderParamInfo};
+use crate::rendering::buffer::IndexType;
+use crate::rendering::context::RenderingContext;
+use crate::rendering::mesh::ElementIndices;
+use crate::rendering::shader;
+use crate::rendering::shader::{BoundShader, ShaderBindError, ShaderParamInfo};
 
 pub mod buffer;
 pub mod game_renderer;

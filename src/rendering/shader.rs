@@ -2,8 +2,8 @@ use std::fmt::Debug;
 
 use cgmath::{Matrix4, Vector3, Vector4};
 
-use rendering::context::RenderingContext;
-use rendering::mesh::ElementIndices;
+use crate::rendering::context::RenderingContext;
+use crate::rendering::mesh::ElementIndices;
 
 #[derive(Clone, Debug)]
 pub enum ShaderInfoError {

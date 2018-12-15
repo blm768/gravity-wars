@@ -2,10 +2,10 @@ use std::convert::TryInto;
 use std::mem;
 use std::rc::Rc;
 
-use rendering::buffer::{Buffer, BufferData, VertexAttributeBinding};
-use rendering::context::RenderingContext;
-use rendering::material::Material;
-use rendering::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
+use crate::rendering::buffer::{Buffer, BufferData, VertexAttributeBinding};
+use crate::rendering::context::RenderingContext;
+use crate::rendering::material::Material;
+use crate::rendering::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
 
 use cgmath::Vector3;
 

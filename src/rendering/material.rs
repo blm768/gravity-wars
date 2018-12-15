@@ -3,13 +3,13 @@ use std::rc::Rc;
 
 use cgmath::Matrix4;
 
-use rendering;
-use rendering::context::RenderingContext;
-use rendering::light::PointLight;
-use rendering::light::ShaderLightInfo;
-use rendering::shader::{BoundShader, ShaderBindError};
-use rendering::shader::{ShaderInfoError, ShaderParamInfo, ShaderProgram};
-use rendering::Rgba;
+use crate::rendering;
+use crate::rendering::context::RenderingContext;
+use crate::rendering::light::PointLight;
+use crate::rendering::light::ShaderLightInfo;
+use crate::rendering::shader::{BoundShader, ShaderBindError};
+use crate::rendering::shader::{ShaderInfoError, ShaderParamInfo, ShaderProgram};
+use crate::rendering::Rgba;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Material {

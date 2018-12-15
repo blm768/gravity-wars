@@ -5,9 +5,9 @@ use std::slice;
 
 use web_sys::{WebGlBuffer, WebGlRenderingContext};
 
-use glue::webgl::WebGlContext;
-use rendering;
-use rendering::buffer::{AttributeType, VertexAttributeBinding};
+use crate::glue::webgl::WebGlContext;
+use crate::rendering;
+use crate::rendering::buffer::{AttributeType, VertexAttributeBinding};
 
 fn to_gl_attr_type(attr_type: AttributeType) -> u32 {
     match attr_type {

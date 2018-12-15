@@ -6,10 +6,10 @@ use cgmath::Vector2;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlCanvasElement;
 
-use glue::callback::{AnimationFrameCallback, IntervalCallback};
-use glue::webgl::game_renderer::WebGlRenderer;
-use state::event::{InputEvent, MissileParams};
-use state::GameState;
+use crate::glue::callback::{AnimationFrameCallback, IntervalCallback};
+use crate::glue::webgl::game_renderer::WebGlRenderer;
+use crate::state::event::{InputEvent, MissileParams};
+use crate::state::GameState;
 
 // Main interface between JavaScript and Rust
 // Also keeps game callbacks alive so the closures don't get dropped.

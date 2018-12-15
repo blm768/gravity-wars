@@ -4,12 +4,12 @@ use cgmath::Matrix4;
 use std::error::Error;
 use std::rc::Rc;
 
-use rendering::context::RenderingContext;
-use rendering::light::PointLight;
-use rendering::material::BoundMaterialShader;
-use rendering::material::{MaterialShader, MaterialWorldContext};
-use rendering::mesh::Mesh;
-use state::{Entity, EntityRenderer, GameState};
+use crate::rendering::context::RenderingContext;
+use crate::rendering::light::PointLight;
+use crate::rendering::material::BoundMaterialShader;
+use crate::rendering::material::{MaterialShader, MaterialWorldContext};
+use crate::rendering::mesh::Mesh;
+use crate::state::{Entity, EntityRenderer, GameState};
 
 #[derive(Debug)]
 pub struct MeshRenderer<Context: RenderingContext> {

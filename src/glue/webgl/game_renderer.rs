@@ -3,10 +3,10 @@ use std::rc::Rc;
 
 use web_sys::WebGlRenderingContext;
 
-use glue::webgl::WebGlContext;
-use rendering::material::MaterialShader;
-use state::GameState;
-use state_renderer::GameRenderer;
+use crate::glue::webgl::WebGlContext;
+use crate::rendering::material::MaterialShader;
+use crate::state::GameState;
+use crate::state_renderer::GameRenderer;
 
 #[derive(Debug)]
 pub struct WebGlRenderer {

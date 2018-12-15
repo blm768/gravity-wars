@@ -5,6 +5,8 @@ name = "gravity-wars"
 version = "0.1.0"
 authors = ["Ben Merritt <blm768@gmail.com>"]
 
+edition = "2018"
+
 [lib]
 crate-type = ["cdylib"]
 
