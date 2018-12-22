@@ -1,6 +1,7 @@
+use std::f32::consts::PI;
 use std::rc::Rc;
 
-use nalgebra::Vector3;
+use nalgebra::{UnitQuaternion, Vector3};
 
 use crate::meshgen;
 use crate::rendering::context::RenderingContext;
@@ -38,6 +39,7 @@ where
 pub fn add_ships(state: &mut GameState, ship_renderer: Rc<EntityRenderer>) {
     let mut ship = Entity::new(Vector3::new(0.0, 0.0, 0.0));
     ship.ship = Some(Ship {});
+    ship.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
     ship.renderer = Some(ship_renderer);
     state.entities.push(ship)
 }

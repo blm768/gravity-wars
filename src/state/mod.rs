@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use nalgebra::Vector3;
+use nalgebra::{Matrix4, Translation, UnitQuaternion, Vector3};
 
 use crate::rendering::light::PointLight;
 use crate::rendering::scene::Camera;
@@ -23,6 +23,7 @@ pub const GRAVITATIONAL_CONSTANT: f32 = 0.0001;
 #[derive(Debug)]
 pub struct Entity {
     pub position: Vector3<f32>,
+    pub rotation: UnitQuaternion<f32>,
     pub mass: f32,
     pub renderer: Option<Rc<EntityRenderer>>,
     pub missile_trail: Option<MissileTrail>,
@@ -33,11 +34,16 @@ impl Entity {
     pub fn new(position: Vector3<f32>) -> Entity {
         Entity {
             position,
+            rotation: UnitQuaternion::identity(),
             mass: 0.0,
             renderer: None,
             missile_trail: None,
             ship: None,
         }
+    }
+
+    pub fn transform(&self) -> Matrix4<f32> {
+        (self.rotation * Translation::from(self.position)).to_homogeneous()
     }
 
     /// Returns the gravitational acceleration produced by this entity on a mass at pos
