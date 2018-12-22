@@ -17,10 +17,13 @@ pub const MISSILE_TIME_TO_LIVE: f32 = 30.0;
 pub const MISSILE_MAX_VELOCITY: f32 = 10.0;
 /// Scaling factor from missile velocity units to actual game units per second
 pub const MISSILE_VELOCITY_SCALE: f32 = 0.1;
+/// Gravitational constant
+pub const GRAVITATIONAL_CONSTANT: f32 = 0.0001;
 
 #[derive(Debug)]
 pub struct Entity {
     pub position: Vector3<f32>,
+    pub mass: f32,
     pub renderer: Option<Rc<EntityRenderer>>,
     pub missile_trail: Option<MissileTrail>,
     pub ship: Option<Ship>,
@@ -30,10 +33,18 @@ impl Entity {
     pub fn new(position: Vector3<f32>) -> Entity {
         Entity {
             position,
+            mass: 0.0,
             renderer: None,
             missile_trail: None,
             ship: None,
         }
+    }
+
+    /// Returns the gravitational acceleration produced by this entity on a mass at pos
+    pub fn gravity_at(&self, pos: &Vector3<f32>) -> Vector3<f32> {
+        use cgmath::InnerSpace;
+        let difference = self.position - pos;
+        difference.normalize() * (difference.magnitude2() * self.mass * GRAVITATIONAL_CONSTANT)
     }
 }
 
@@ -152,20 +163,26 @@ impl GameState {
     }
 
     pub fn update_missiles(&mut self) {
-        let missiles = self
-            .entities
-            .iter_mut()
-            .filter_map(|e| match e.missile_trail {
-                Some(ref mut trail) => Some((&mut e.position, trail)),
-                None => None,
-            });
-
-        for (pos, missile) in missiles {
-            if missile.time_to_live > 0.0 {
-                missile.time_to_live -= 1.0; // TODO: figure out time handling properly...
-                *pos += missile.velocity;
-                missile.add_position(*pos);
-                // TODO: handle collisions.
+        let entities = &mut self.entities[..];
+        for i in 0..entities.len() {
+            // Break off mutable slices to all of the other entities.
+            let (before, after) = entities.split_at_mut(i);
+            let (entity, after) = after.split_first_mut().unwrap();
+            if let Entity {
+                position: ref mut pos,
+                missile_trail: Some(ref mut missile),
+                ..
+            } = entity
+            {
+                if missile.time_to_live > 0.0 {
+                    missile.time_to_live -= 1.0; // TODO: figure out time handling properly...
+                    *pos += missile.velocity;
+                    missile.add_position(*pos);
+                    for other in before.iter().chain(after.iter()) {
+                        missile.velocity += other.gravity_at(pos);
+                    }
+                    // TODO: handle collisions.
+                }
             }
         }
     }

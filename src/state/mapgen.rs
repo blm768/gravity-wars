@@ -29,6 +29,7 @@ where
     let planet_renderer = Rc::new(MeshRenderer::new(renderer, planet_mesh));
 
     let mut planet = Entity::new(Vector3::new(3.0, 0.0, 0.0));
+    planet.mass = 100.0;
     planet.renderer = Some(planet_renderer);
     state.entities.push(planet);
     Ok(())
