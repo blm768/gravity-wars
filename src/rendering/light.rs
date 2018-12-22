@@ -1,4 +1,4 @@
-use cgmath::Vector3;
+use nalgebra::Vector3;
 
 use crate::rendering;
 use crate::rendering::context::RenderingContext;

@@ -7,7 +7,7 @@ use crate::rendering::context::RenderingContext;
 use crate::rendering::material::Material;
 use crate::rendering::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
 
-use cgmath::Vector3;
+use nalgebra::Vector3;
 
 pub struct GridMesh {
     positions: Vec<Vector3<f32>>,

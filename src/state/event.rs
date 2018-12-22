@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::Display;
 
-use cgmath::Vector2;
+use nalgebra::Vector2;
 
 #[derive(Clone, Copy, Debug)]
 pub enum InputEventError {

@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::fmt::Debug;
 
-use cgmath::Matrix4;
+use nalgebra::Matrix4;
 use std::cell::Cell;
 use std::error::Error;
 use std::rc::Rc;
@@ -32,7 +32,7 @@ impl<Context: RenderingContext> EntityRenderer for MeshRenderer<Context> {
         let mat_shader = self.renderer.material_shader();
         let bound_shader = BoundMaterialShader::new(context, mat_shader, world).unwrap();
 
-        let model_transform = Matrix4::from_translation(entity.position);
+        let model_transform = Matrix4::new_translation(&entity.position);
         bound_shader.set_uniform_mat4(
             self.renderer.material_shader().info.model_view.index,
             model_transform,

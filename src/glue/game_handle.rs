@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use cgmath::Vector2;
+use nalgebra::Vector2;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlCanvasElement;
 
@@ -53,7 +53,7 @@ impl GameHandle {
         camera.aspect_ratio = self.renderer.context().aspect_ratio();
         let projection = camera.projection();
         let pan_factor =
-            (projection.top - projection.bottom) / self.renderer.context().height() as f32;
+            (projection.top() - projection.bottom()) / self.renderer.context().height() as f32;
         let delta = Vector2::new(x * pan_factor, y * pan_factor);
         self.input_queue
             .borrow_mut()

@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::mem;
 use std::slice;
 
-use cgmath::Vector3;
+use nalgebra::Vector3;
 
 use crate::rendering::context;
 
@@ -176,7 +176,10 @@ unsafe impl VertexAttributeData for f32 {
 }
 
 // TODO: split out vector/scalar traits so we can't try to make vectors of vectors?
-unsafe impl<T: VertexAttributeData> VertexAttributeData for Vector3<T> {
+unsafe impl<T> VertexAttributeData for Vector3<T>
+where
+    T: VertexAttributeData + nalgebra::Scalar,
+{
     const ATTRIB_TYPE: AttributeType = <T as VertexAttributeData>::ATTRIB_TYPE;
     const ATTRIB_COUNT: usize = 3;
 }

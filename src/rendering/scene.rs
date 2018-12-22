@@ -1,4 +1,4 @@
-use cgmath::{Ortho, Vector3};
+use nalgebra::{Orthographic3, Vector3};
 
 #[derive(Clone, Debug)]
 pub struct Camera {
@@ -20,16 +20,16 @@ impl Camera {
         10.0_f32.powf(self.log_scale)
     }
 
-    pub fn projection(&self) -> Ortho<f32> {
+    pub fn projection(&self) -> Orthographic3<f32> {
         let scale = self.scale();
         let right = scale * self.aspect_ratio;
-        Ortho::<f32> {
-            left: self.position.x - right,
-            right: self.position.x + right,
-            top: self.position.y + scale,
-            bottom: self.position.y - scale,
-            near: -scale,
-            far: scale,
-        }
+        Orthographic3::new(
+            self.position.x - right,
+            self.position.x + right,
+            self.position.y - scale,
+            self.position.y + scale,
+            -scale,
+            scale,
+        )
     }
 }

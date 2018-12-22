@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use cgmath::Vector3;
+use nalgebra::Vector3;
 
 use crate::meshgen;
 use crate::rendering::context::RenderingContext;

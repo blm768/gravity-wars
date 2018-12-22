@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use cgmath::{Matrix4, Vector3, Vector4};
+use nalgebra::{Matrix4, Vector3, Vector4};
 
 use crate::rendering::context::RenderingContext;
 use crate::rendering::mesh::ElementIndices;

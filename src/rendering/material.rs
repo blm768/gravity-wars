@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::rc::Rc;
 
-use cgmath::Matrix4;
+use nalgebra::Matrix4;
 
 use crate::rendering;
 use crate::rendering::context::RenderingContext;

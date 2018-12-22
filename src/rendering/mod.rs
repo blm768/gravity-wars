@@ -7,7 +7,7 @@ pub mod mesh;
 pub mod scene;
 pub mod shader;
 
-use cgmath::{Vector3, Vector4};
+use nalgebra::{Vector3, Vector4};
 use rgb::{RGB, RGBA};
 
 pub type Rgb = RGB<f32>;

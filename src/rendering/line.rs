@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::rc::Rc;
 
-use cgmath::{Matrix4, Vector3};
+use nalgebra::{Matrix4, Vector3};
 
 use crate::rendering;
 use crate::rendering::buffer::{AttributeBuffer, Buffer, BufferData, VertexAttributeBinding};

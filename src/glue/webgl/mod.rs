@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use cgmath::{Matrix4, Vector3, Vector4};
+use nalgebra::{Matrix4, Vector3, Vector4};
 use web_sys::{Element, HtmlCanvasElement};
 use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlUniformLocation};
 
@@ -310,7 +310,7 @@ impl BoundShader<WebGlContext> for WebGlBoundShader {
     }
 
     fn set_uniform_mat4(&self, index: usize, mut value: Matrix4<f32>) {
-        let raw: &mut [f32; 16] = value.as_mut();
+        let raw: &mut [f32] = value.as_mut_slice();
         self.context.uniform_matrix4fv_with_f32_array(
             Some(&self.shader.uniforms[index].location),
             false,

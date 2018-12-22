@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use cgmath::Vector3;
+use nalgebra::Vector3;
 
 use crate::rendering::light::PointLight;
 use crate::rendering::scene::Camera;
@@ -42,9 +42,9 @@ impl Entity {
 
     /// Returns the gravitational acceleration produced by this entity on a mass at pos
     pub fn gravity_at(&self, pos: &Vector3<f32>) -> Vector3<f32> {
-        use cgmath::InnerSpace;
         let difference = self.position - pos;
-        difference.normalize() * (difference.magnitude2() * self.mass * GRAVITATIONAL_CONSTANT)
+        let strength = difference.magnitude_squared() * self.mass * GRAVITATIONAL_CONSTANT;
+        difference.normalize() * strength
     }
 }
 
