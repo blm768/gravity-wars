@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html>
-</html>
+
 <head>
   <meta charset="UTF-8">
   <title>Gravity Wars</title>
   <link rel="stylesheet" type="text/css" href="./main.css">
   <script type="text/javascript" src="./bundle.js"></script>
 </head>
+
 <body>
-<div id="game_container">
-  <div id="game_map"><canvas id="game_canvas"></canvas></div>
-  <div id="game_overlay"></div>
-  <form id="game_controls" action="javascript:void(0)">
-    <label for="angle">Angle <input id="angle" type="number" required="required" min="0" max="360" step="any"></label>
-    <label for="power">Power <input id="power" type="number" required="required" min="0" max="10" step="any"></label>
-    <input id="fire" type="submit" value="Fire!">
-    <label id="current_player"></label>
+  <div id="game_container">
+    <div id="game_map"><canvas id="game_canvas"></canvas></div>
+    <div id="game_overlay"></div>
+    <form id="game_controls" action="javascript:void(0)">
+      <label for="angle">Angle <input id="angle" type="number" required="required" step="any"></label>
+      <label for="power">Power <input id="power" type="number" required="required" min="0" max="10" step="any"></label>
+      <input id="fire" type="submit" value="Fire!">
+      <label id="current_player"></label>
+    </form>
   </div>
-</div>
 </body>
+
 </html>

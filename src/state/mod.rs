@@ -6,13 +6,17 @@ use cgmath::Vector3;
 use crate::rendering::light::PointLight;
 use crate::rendering::scene::Camera;
 use crate::rendering::Rgb;
-use crate::state::event::{InputEvent, InputEventError};
+use crate::state::event::{InputEvent, InputEventError, MissileParams};
 
 pub mod event;
 pub mod mapgen;
 
-// Maximum time to live (in seconds)
+/// Maximum time to live (in seconds)
 pub const MISSILE_TIME_TO_LIVE: f32 = 30.0;
+/// Maximum missile velocity (in arbitrary units)
+pub const MISSILE_MAX_VELOCITY: f32 = 10.0;
+/// Scaling factor from missile velocity units to actual game units per second
+pub const MISSILE_VELOCITY_SCALE: f32 = 0.1;
 
 #[derive(Debug)]
 pub struct Entity {
@@ -109,35 +113,41 @@ impl GameState {
         match event {
             InputEvent::PanCamera(delta) => {
                 self.camera.position += Vector3::new(delta.x, delta.y, 0.0);
+                Ok(())
             }
             InputEvent::ZoomCamera(ref scale) => {
                 self.camera.log_scale += scale;
+                Ok(())
             }
-            InputEvent::FireMissile(ref params) => {
-                // TODO: validation
-                let missile = {
-                    let mut entity = {
-                        let ship = self
-                            .get_ship()
-                            .ok_or(InputEventError::NoShipToFireMissile)?;
-                        Entity::new(ship.position)
-                    };
-                    entity.missile_trail = Some(MissileTrail {
-                        time_to_live: MISSILE_TIME_TO_LIVE,
-                        velocity: Vector3::new(
-                            params.speed * params.angle.cos(),
-                            params.speed * params.angle.sin(),
-                            0.0,
-                        ),
-                        positions: Vec::new(),
-                        data_version: 0,
-                    });
-                    entity.renderer = (self.make_missile_renderer)();
-                    entity
-                };
-                self.entities.push(missile);
-            }
+            InputEvent::FireMissile(ref params) => self.fire_missile(params),
         }
+    }
+
+    fn fire_missile(&mut self, params: &MissileParams) -> Result<(), InputEventError> {
+        if !params.angle.is_finite() {
+            return Err(InputEventError::InvalidMissileAngle);
+        }
+        if params.speed < 0.0 || params.speed > MISSILE_MAX_VELOCITY {
+            return Err(InputEventError::InvalidMissileSpeed);
+        }
+
+        let missile = {
+            let ship = self
+                .get_ship()
+                .ok_or(InputEventError::NoShipToFireMissile)?;
+            let mut entity = Entity::new(ship.position);
+            let speed = params.speed * MISSILE_VELOCITY_SCALE;
+            entity.missile_trail = Some(MissileTrail {
+                time_to_live: MISSILE_TIME_TO_LIVE,
+                velocity: Vector3::new(speed * params.angle.cos(), speed * params.angle.sin(), 0.0),
+                positions: [entity.position].to_vec(),
+                data_version: 0,
+            });
+            entity.position = ship.position;
+            entity.renderer = (self.make_missile_renderer)();
+            entity
+        };
+        self.entities.push(missile);
         Ok(())
     }
 

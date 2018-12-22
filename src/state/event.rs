@@ -6,6 +6,8 @@ use cgmath::Vector2;
 #[derive(Clone, Copy, Debug)]
 pub enum InputEventError {
     NoShipToFireMissile,
+    InvalidMissileAngle,
+    InvalidMissileSpeed,
 }
 
 impl Display for InputEventError {
@@ -15,6 +17,8 @@ impl Display for InputEventError {
             "Invalid game input event: {}",
             match self {
                 InputEventError::NoShipToFireMissile => "No ship that can fire a missile",
+                InputEventError::InvalidMissileAngle => "Invalid angle for missile",
+                InputEventError::InvalidMissileSpeed => "Invalid speed for missile",
             }
         )
     }

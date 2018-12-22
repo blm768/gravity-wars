@@ -29,8 +29,7 @@ export class GameInterface {
     }
 
     sendFireEvent() {
-        // TODO: add some additional validation beyond what the HTML does?
-        let angle = parseFloat(this.angleInput.value);
+        let angle = parseFloat(this.angleInput.value) * Math.PI / 180.0;
         let power = parseFloat(this.powerInput.value);
 
         this.gameHandle.onFire(angle, power);
