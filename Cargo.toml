@@ -26,6 +26,10 @@ js-sys = "0.3.5"
 nalgebra = "0.16.12"
 rgb = "0.8"
 
+[dependencies.rand]
+version = "0.6.1"
+features = ["wasm-bindgen"]
+
 [dependencies.wasm-bindgen]
 version = "0.2.29"
 features = ["nightly"]

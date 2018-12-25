@@ -23,7 +23,7 @@ use crate::rendering::material::MaterialShader;
 use crate::rendering::mesh::gltf::GltfLoader;
 use crate::rendering::Rgb;
 use crate::state::event::InputEvent;
-use crate::state::mapgen;
+use crate::state::mapgen::MapgenParams;
 use crate::state::{EntityRenderer, GameState};
 use crate::state_renderer::{GameRenderer, MeshRenderer, MissileTrailRenderer};
 
@@ -147,7 +147,6 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         ) as Rc<EntityRenderer>)
     };
     let mut state = GameState::new(Box::new(make_missile_trail));
-    mapgen::generate_map(&mut state);
 
     let raw_gltf = assets
         .get("assets/meshes/ship.glb")
@@ -166,12 +165,18 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         mesh,
     ));
 
-    mapgen::add_ships(&mut state, ship_renderer);
-    mapgen::add_planets(
-        &mut state,
-        Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
-    )
-    .map_err(|_| String::from("Unable to create planet mesh/renderer"))?;
+    let mut mapgen_params = MapgenParams {
+        game_state: &mut state,
+        width: 10.0,
+        height: 10.0,
+        num_players: 2,
+        game_renderer: Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
+        ship_renderer: Rc::clone(&ship_renderer) as Rc<dyn EntityRenderer>,
+    };
+    mapgen_params
+        .generate_map()
+        .map_err(|e| format!("Unable to create map: {:?}", e))?;
+    state.next_player();
 
     let shared_state = Rc::new(RefCell::new(state));
 

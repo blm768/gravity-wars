@@ -91,12 +91,20 @@ impl MissileTrail {
 }
 
 #[derive(Clone, Debug)]
-pub struct Ship {}
+pub struct Ship {
+    player_id: usize,
+}
+
+pub struct Player {
+    pub color: Rgb,
+}
 
 pub type RendererFactory = Box<FnMut() -> Option<Rc<EntityRenderer>>>;
 
 pub struct GameState {
     pub entities: Vec<Entity>,
+    players: Box<[Player]>,
+    current_player: Option<usize>,
     pub camera: Camera,
     pub light: PointLight,
     pub make_missile_renderer: RendererFactory,
@@ -111,6 +119,8 @@ impl GameState {
 
         GameState {
             entities: Vec::new(),
+            players: Box::from([]),
+            current_player: None,
             camera: Camera::new(),
             light,
             make_missile_renderer,
@@ -122,7 +132,43 @@ impl GameState {
     }
 
     pub fn get_ship(&self) -> Option<&Entity> {
-        self.entities.iter().find(|e| e.ship.is_some())
+        match self.current_player {
+            Some(id) => self.entities.iter().find(|ref e| match e.ship {
+                Some(ref ship) => ship.player_id == id,
+                None => false,
+            }),
+            None => None,
+        }
+    }
+
+    pub fn players(&self) -> &[Player] {
+        &self.players
+    }
+
+    pub fn set_players(&mut self, players: Box<[Player]>) {
+        self.players = players;
+        self.current_player = None;
+    }
+
+    pub fn next_player(&mut self) {
+        if self.players.len() == 0 {
+            self.current_player = None;
+            return;
+        }
+
+        let next_player = match self.current_player {
+            Some(id) => (id + 1) % self.players.len(),
+            None => 0,
+        };
+
+        let skip_to_next = self
+            .entities
+            .iter()
+            .filter_map(|e| e.ship.as_ref())
+            .filter(|s| s.player_id < self.players.len())
+            .map(|s| (s.player_id + self.players.len() - next_player) % self.players.len())
+            .min();
+        self.current_player = skip_to_next.map(|s| next_player + s);
     }
 
     pub fn handle_input(&mut self, event: &InputEvent) -> Result<(), InputEventError> {
@@ -165,6 +211,7 @@ impl GameState {
             entity
         };
         self.entities.push(missile);
+        self.next_player();
         Ok(())
     }
 
