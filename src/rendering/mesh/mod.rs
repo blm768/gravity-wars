@@ -30,21 +30,32 @@ impl<Context: RenderingContext> Mesh<Context> {
 
 #[derive(Debug)]
 pub struct Primitive<Context: RenderingContext> {
-    material: Material,
+    pub material: Material,
+    pub geometry: Rc<PrimitiveGeometry<Context>>,
+}
+
+impl<Context: RenderingContext> Primitive<Context> {
+    pub fn draw(&self, shader: &BoundMaterialShader<Context>) {
+        use std::ops::Deref; // TODO: why do we need to call deref() instead of using &*shader?
+        shader.info().bind_material(&self.material, shader.deref());
+        self.geometry.draw(shader);
+    }
+}
+
+#[derive(Debug)]
+pub struct PrimitiveGeometry<Context: RenderingContext> {
     indices: Option<ElementIndices<Context>>,
     positions: VertexAttribute<Context>,
     normals: VertexAttribute<Context>,
 }
 
-impl<Context: RenderingContext> Primitive<Context> {
+impl<Context: RenderingContext> PrimitiveGeometry<Context> {
     pub fn new(
-        material: Material,
         indices: Option<ElementIndices<Context>>,
         positions: VertexAttribute<Context>,
         normals: VertexAttribute<Context>,
     ) -> Result<Self, ()> {
-        Ok(Primitive {
-            material,
+        Ok(PrimitiveGeometry {
             indices,
             positions,
             normals,
@@ -55,8 +66,6 @@ impl<Context: RenderingContext> Primitive<Context> {
     /// The projection and modelview matrix uniforms must already be bound.
     // TODO: break out a separate bind() method?
     pub fn draw(&self, shader: &BoundMaterialShader<Context>) {
-        use std::ops::Deref; // TODO: why do we need to call deref() instead of using &*shader?
-        shader.info().bind_material(&self.material, shader.deref());
         self.positions.bind(shader.info().position.index);
         self.normals.bind(shader.info().normal.index);
         match self.indices {

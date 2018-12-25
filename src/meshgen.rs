@@ -5,7 +5,7 @@ use std::rc::Rc;
 use crate::rendering::buffer::{Buffer, BufferData, VertexAttributeBinding};
 use crate::rendering::context::RenderingContext;
 use crate::rendering::material::Material;
-use crate::rendering::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
+use crate::rendering::mesh::{ElementIndices, Mesh, Primitive, PrimitiveGeometry, VertexAttribute};
 
 use nalgebra::Vector3;
 
@@ -75,8 +75,7 @@ impl GridMesh {
     pub fn make_primitive<Context: RenderingContext>(
         &self,
         context: &Context,
-        material: Material,
-    ) -> Result<Primitive<Context>, ()> {
+    ) -> Result<PrimitiveGeometry<Context>, ()> {
         let index_data = self.face_indices::<u16>(); // TODO: use smaller index types where possible.
         let indices = ElementIndices::from_data(&index_data, context)?;
 
@@ -101,7 +100,7 @@ impl GridMesh {
         normal_binding.set_stride(stride);
         let normals = VertexAttribute::new(Rc::clone(&attribute_buf), normal_binding);
 
-        Primitive::new(material, Some(indices), positions, normals)
+        PrimitiveGeometry::new(Some(indices), positions, normals)
     }
 }
 
@@ -210,7 +209,13 @@ where
     let primitives = CubeFace::ALL
         .iter()
         .map(|f| gen_part_sphere(radius, segments, *f))
-        .map(|m| m.make_primitive(context, material))
+        .map(|m| m.make_primitive(context))
+        .map(|g| {
+            Ok(Primitive {
+                material,
+                geometry: Rc::new(g?),
+            })
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(Mesh::new(primitives))

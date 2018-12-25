@@ -9,7 +9,7 @@ use gltf::{Accessor, Gltf, Semantic};
 use crate::rendering::buffer::{AttributeType, Buffer, ElementBinding, VertexAttributeBinding};
 use crate::rendering::context::RenderingContext;
 use crate::rendering::material::Material;
-use crate::rendering::mesh::{ElementIndices, Mesh, Primitive, VertexAttribute};
+use crate::rendering::mesh::{ElementIndices, Mesh, Primitive, PrimitiveGeometry, VertexAttribute};
 use crate::rendering::Rgba;
 
 pub struct GltfLoader<'a, Context: RenderingContext> {
@@ -88,7 +88,8 @@ where
         };
         let positions = self.load_attribute(&pos_accessor)?;
         let normals = self.load_attribute(&normal_accessor)?;
-        Primitive::new(material, indices, positions, normals)
+        let geometry = Rc::new(PrimitiveGeometry::new(indices, positions, normals)?);
+        Ok(Primitive { material, geometry })
     }
 
     fn load_buffer(&self, gl_buf: &Buffer<RenderingContext = Context>, src_buf: &gltf::Buffer) {
