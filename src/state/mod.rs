@@ -43,7 +43,7 @@ impl Entity {
     }
 
     pub fn transform(&self) -> Matrix4<f32> {
-        (self.rotation * Translation::from(self.position)).to_homogeneous()
+        (Translation::from(self.position) * self.rotation).to_homogeneous()
     }
 
     /// Returns the gravitational acceleration produced by this entity on a mass at pos
