@@ -168,6 +168,12 @@ impl AssetLoader {
     }
 }
 
+impl Default for AssetLoader {
+    fn default() -> Self {
+        AssetLoader::new()
+    }
+}
+
 #[wasm_bindgen]
 #[derive(Debug)]
 pub struct AssetData(HashMap<Box<str>, FetchResult>);

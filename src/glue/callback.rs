@@ -15,7 +15,8 @@ impl AnimationFrameCallback {
     pub fn new<F: Fn(f64) + 'static>(callback: F) -> AnimationFrameCallback {
         // We'll need to wrap the provided callback in a self-referential "loop" closure that runs the callback and then invokes requestAnimationFrame on itself.
         // To start, we'll need some shared storage to hold the self-referential closure. We can't fill it in yet because of the circular reference.
-        let shared_loop: Rc<RefCell<Option<Box<Fn(f64)>>>> = Rc::new(RefCell::new(None));
+        type Callback = Box<Fn(f64)>;
+        let shared_loop: Rc<RefCell<Option<Callback>>> = Rc::new(RefCell::new(None));
 
         // Adapt a copy of shared_loop so it can be passed as a JS function to requestAnimationFrame.
         let weak_loop = Rc::downgrade(&shared_loop); // Prevents a reference loop.

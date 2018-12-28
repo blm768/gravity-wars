@@ -178,15 +178,15 @@ impl GameState {
                 self.camera.position += Vector3::new(delta.x, delta.y, 0.0);
                 Ok(())
             }
-            InputEvent::ZoomCamera(ref scale) => {
+            InputEvent::ZoomCamera(scale) => {
                 self.camera.log_scale += scale;
                 Ok(())
             }
-            InputEvent::FireMissile(ref params) => self.fire_missile(params),
+            InputEvent::FireMissile(params) => self.fire_missile(*params),
         }
     }
 
-    fn fire_missile(&mut self, params: &MissileParams) -> Result<(), InputEventError> {
+    fn fire_missile(&mut self, params: MissileParams) -> Result<(), InputEventError> {
         if !params.angle.is_finite() {
             return Err(InputEventError::InvalidMissileAngle);
         }

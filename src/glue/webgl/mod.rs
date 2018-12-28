@@ -160,7 +160,7 @@ impl shader::ShaderProgram for ShaderProgram {
     }
 
     fn attribute(&self, name: &str) -> Option<ShaderParamInfo> {
-        self.attributes.get(name).map(|inf| inf.clone())
+        self.attributes.get(name).cloned()
     }
 
     fn uniform(&self, name: &str) -> Option<ShaderParamInfo> {

@@ -124,7 +124,7 @@ impl CubeFace {
         CubeFace::Front,
     ];
 
-    pub fn normal(&self) -> Vector3<f32> {
+    pub fn normal(self) -> Vector3<f32> {
         match self {
             CubeFace::Left => Vector3::new(-1.0, 0.0, 0.0),
             CubeFace::Right => Vector3::new(1.0, 0.0, 0.0),
@@ -135,7 +135,7 @@ impl CubeFace {
         }
     }
 
-    pub fn tangent(&self) -> Vector3<f32> {
+    pub fn tangent(self) -> Vector3<f32> {
         match self {
             CubeFace::Left => Vector3::new(0.0, 0.0, 1.0),
             CubeFace::Right => Vector3::new(0.0, 0.0, -1.0),
@@ -146,7 +146,7 @@ impl CubeFace {
         }
     }
 
-    pub fn bitangent(&self) -> Vector3<f32> {
+    pub fn bitangent(self) -> Vector3<f32> {
         match self {
             CubeFace::Left => Vector3::new(0.0, 1.0, 0.0),
             CubeFace::Right => Vector3::new(0.0, 1.0, 0.0),
