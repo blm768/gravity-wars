@@ -210,9 +210,9 @@ where
         .iter()
         .map(|f| gen_part_sphere(radius, segments, *f))
         .map(|m| m.make_primitive(context))
-        .map(|g| {
+        .map(move |g| {
             Ok(Primitive {
-                material,
+                material: material.clone(),
                 geometry: Rc::new(g?),
             })
         })

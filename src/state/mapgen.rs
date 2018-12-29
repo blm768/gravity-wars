@@ -7,7 +7,8 @@ use rand::{self, Rng};
 use crate::meshgen;
 use crate::rendering::context::RenderingContext;
 use crate::rendering::material::Material;
-use crate::rendering::Rgba;
+use crate::rendering::mesh::Mesh;
+use crate::rendering::{Rgb, Rgba};
 use crate::state::{Entity, EntityRenderer, GameState, Player, Ship};
 use crate::state_renderer::{GameRenderer, MeshRenderer};
 
@@ -20,6 +21,7 @@ const MAX_PLACE_ENTITY_TRIES: usize = 256;
 pub enum MapgenError {
     CouldNotPlaceEntity,
     CouldNotCreatePlanetRenderer,
+    CouldNotCreateShipRenderers,
 }
 
 pub struct MapgenParams<'a, Context>
@@ -31,7 +33,7 @@ where
     pub height: f32,
     pub num_players: usize,
     pub game_renderer: Rc<GameRenderer<Context = Context>>,
-    pub ship_renderer: Rc<EntityRenderer>,
+    pub make_ship_renderer: Box<Fn(&Player) -> Result<Rc<EntityRenderer>, ()>>,
 }
 
 impl<'a, Context> MapgenParams<'a, Context>
@@ -64,6 +66,7 @@ where
             base_color: Rgba::new(0.0, 0.0, 1.0, 1.0),
             metal_factor: 0.0,
             roughness: 1.0,
+            extras: None,
         };
         let planet_mesh = meshgen::gen_sphere(1.0, 10, renderer.context(), planet_material)
             .map_err(|_| MapgenError::CouldNotCreatePlanetRenderer)?;
@@ -77,14 +80,27 @@ where
     }
 
     fn add_ships(&mut self) -> Result<(), MapgenError> {
+        let renderers = self
+            .make_player_ship_renderers()
+            .map_err(|_| MapgenError::CouldNotCreateShipRenderers)?;
         for (id, _player) in self.game_state.players.iter().enumerate() {
             let mut ship = self.place_entity()?;
             ship.ship = Some(Ship { player_id: id });
             ship.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
-            ship.renderer = Some(Rc::clone(&self.ship_renderer));
+            ship.renderer = Some(Rc::clone(&renderers[id]));
             self.game_state.entities.push(ship)
         }
         Ok(())
+    }
+
+    fn make_player_ship_renderers(&mut self) -> Result<Vec<Rc<EntityRenderer>>, ()> {
+        let players = &self.game_state.players;
+        let mut renderers = Vec::with_capacity(players.len());
+        for player in players.iter() {
+            let renderer = (self.make_ship_renderer)(player)?;
+            renderers.push(renderer)
+        }
+        Ok(renderers)
     }
 
     fn place_entity(&self) -> Result<Entity, MapgenError> {
@@ -108,4 +124,25 @@ where
         }
         Err(MapgenError::CouldNotPlaceEntity)
     }
+}
+
+pub fn make_ship_mesh_renderer<Context>(
+    renderer: Rc<GameRenderer<Context = Context>>,
+    mesh: &Mesh<Context>,
+    color: &Rgb,
+) -> Rc<EntityRenderer>
+where
+    Context: RenderingContext + 'static,
+{
+    let mut new_mesh: Mesh<Context> = mesh.clone();
+    for mut primitive in new_mesh.primitives.iter_mut() {
+        if let Some(ref extra) = primitive.material.extras {
+            if let Some(team_color) = extra.get("team_color") {
+                if let Some(1) = team_color.as_u64() {
+                    primitive.material.base_color = color.alpha(1.0);
+                }
+            }
+        }
+    }
+    Rc::new(MeshRenderer::new(renderer, new_mesh))
 }

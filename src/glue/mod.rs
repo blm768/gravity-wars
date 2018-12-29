@@ -23,9 +23,9 @@ use crate::rendering::material::MaterialShader;
 use crate::rendering::mesh::gltf::GltfLoader;
 use crate::rendering::Rgb;
 use crate::state::event::InputEvent;
-use crate::state::mapgen::MapgenParams;
-use crate::state::{EntityRenderer, GameState};
-use crate::state_renderer::{GameRenderer, MeshRenderer, MissileTrailRenderer};
+use crate::state::mapgen::{self, MapgenParams};
+use crate::state::{EntityRenderer, GameState, Player};
+use crate::state_renderer::{GameRenderer, MissileTrailRenderer};
 
 pub mod asset;
 pub mod callback;
@@ -157,21 +157,25 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         .meshes()
         .next()
         .ok_or_else(|| String::from("Unable to find mesh"))?;
-    let mesh = loader
+    let ship_mesh = loader
         .load_mesh(&first_mesh)
         .map_err(|_| String::from("Unable to load mesh"))?;
-    let ship_renderer = Rc::new(MeshRenderer::new(
-        Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
-        mesh,
-    ));
 
+    let renderer_clone = Rc::clone(&renderer);
+    let make_ship_renderer = move |player: &Player| {
+        Ok(mapgen::make_ship_mesh_renderer(
+            Rc::clone(&renderer_clone) as Rc<GameRenderer<Context = WebGlContext>>,
+            &ship_mesh,
+            &player.color,
+        ))
+    };
     let mut mapgen_params = MapgenParams {
         game_state: &mut state,
         width: 10.0,
         height: 10.0,
         num_players: 2,
         game_renderer: Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
-        ship_renderer: Rc::clone(&ship_renderer) as Rc<dyn EntityRenderer>,
+        make_ship_renderer: Box::new(make_ship_renderer),
     };
     mapgen_params
         .generate_map()

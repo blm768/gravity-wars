@@ -11,11 +11,12 @@ use crate::rendering::shader::{BoundShader, ShaderBindError};
 use crate::rendering::shader::{ShaderInfoError, ShaderParamInfo, ShaderProgram};
 use crate::rendering::Rgba;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Material {
     pub base_color: Rgba,
     pub metal_factor: f32,
     pub roughness: f32,
+    pub extras: Option<serde_json::Value>,
 }
 
 #[derive(Clone, Debug)]

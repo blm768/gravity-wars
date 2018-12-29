@@ -9,7 +9,7 @@ pub mod gltf;
 
 #[derive(Debug)]
 pub struct Mesh<Context: RenderingContext> {
-    primitives: Vec<Primitive<Context>>,
+    pub primitives: Vec<Primitive<Context>>,
 }
 
 impl<Context: RenderingContext> Mesh<Context> {
@@ -17,14 +17,16 @@ impl<Context: RenderingContext> Mesh<Context> {
         Mesh { primitives }
     }
 
-    pub fn primitives(&self) -> &[Primitive<Context>] {
-        &self.primitives
-    }
-
     pub fn draw(&self, shader: &BoundMaterialShader<Context>) {
         for p in self.primitives.iter() {
             p.draw(shader);
         }
+    }
+}
+
+impl<Context: RenderingContext> Clone for Mesh<Context> {
+    fn clone(&self) -> Self {
+        Mesh::new(self.primitives.clone())
     }
 }
 
@@ -39,6 +41,15 @@ impl<Context: RenderingContext> Primitive<Context> {
         use std::ops::Deref; // TODO: why do we need to call deref() instead of using &*shader?
         shader.info().bind_material(&self.material, shader.deref());
         self.geometry.draw(shader);
+    }
+}
+
+impl<Context: RenderingContext> Clone for Primitive<Context> {
+    fn clone(&self) -> Self {
+        Primitive {
+            material: self.material.clone(),
+            geometry: Rc::clone(&self.geometry),
+        }
     }
 }
 

@@ -58,6 +58,7 @@ where
             base_color: from4(pbr.base_color_factor()),
             metal_factor: pbr.metallic_factor(),
             roughness: pbr.roughness_factor(),
+            extras: material.extras().as_ref().cloned(),
         })
     }
 
