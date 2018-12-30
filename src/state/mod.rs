@@ -150,6 +150,10 @@ impl GameState {
         self.current_player = None;
     }
 
+    pub fn current_player(&self) -> Option<usize> {
+        self.current_player
+    }
+
     pub fn next_player(&mut self) {
         if self.players.len() == 0 {
             self.current_player = None;

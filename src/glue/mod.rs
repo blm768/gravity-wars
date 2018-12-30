@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::VecDeque;
 
 use std::io::Cursor;
 use std::rc::Rc;
@@ -22,7 +21,6 @@ use crate::rendering::line::LineShader;
 use crate::rendering::material::MaterialShader;
 use crate::rendering::mesh::gltf::GltfLoader;
 use crate::rendering::Rgb;
-use crate::state::event::InputEvent;
 use crate::state::mapgen::{self, MapgenParams};
 use crate::state::{EntityRenderer, GameState, Player};
 use crate::state_renderer::{GameRenderer, MissileTrailRenderer};
@@ -182,20 +180,18 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         .map_err(|e| format!("Unable to create map: {:?}", e))?;
     state.next_player();
 
-    let shared_state = Rc::new(RefCell::new(state));
+    let mut game_handle = GameHandle::new(Rc::new(RefCell::new(state)), Rc::clone(&renderer));
 
-    let render_state = Rc::clone(&shared_state);
-    let renderer_clone = Rc::clone(&renderer);
+    let render_state = Rc::clone(game_handle.game_state());
     let render_frame = move |_milliseconds: f64| {
-        renderer_clone
+        renderer
             .render(&mut render_state.borrow_mut())
             .unwrap_or_else(|e| log(&e.to_string()));
     };
 
-    let input_queue = Rc::new(RefCell::new(VecDeque::<InputEvent>::new()));
-
-    let update_state = Rc::clone(&shared_state);
-    let update_input_queue = Rc::clone(&input_queue);
+    let update_state = Rc::clone(game_handle.game_state());
+    let update_input_queue = Rc::clone(game_handle.input_queue());
+    let update_interface = Rc::clone(game_handle.interface());
     let update_game = move || {
         let mut queue = update_input_queue.borrow_mut();
         let queue_len = queue.len();
@@ -205,18 +201,20 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
             }
         }
         update_state.borrow_mut().update_missiles();
+        if let Some(ref interface) = *update_interface.borrow() {
+            interface.update_ui();
+        }
     };
 
-    let mut render_callback = AnimationFrameCallback::new(render_frame);
+    let mut render_callback = Box::new(AnimationFrameCallback::new(render_frame));
     render_callback.start()?;
-    let mut update_callback = IntervalCallback::new(update_game, STATE_UPDATE_INTERVAL as i32);
+    game_handle.add_callback(render_callback);
+    let mut update_callback = Box::new(IntervalCallback::new(
+        update_game,
+        STATE_UPDATE_INTERVAL as i32,
+    ));
     update_callback.start()?;
+    game_handle.add_callback(update_callback);
 
-    Ok(GameHandle::new(
-        shared_state,
-        renderer,
-        input_queue,
-        render_callback,
-        update_callback,
-    ))
+    Ok(game_handle)
 }

@@ -6,6 +6,11 @@ use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use web_sys;
 
+pub trait Callback {
+    fn stop(&mut self);
+    fn is_running(&self) -> bool;
+}
+
 pub struct AnimationFrameCallback {
     closure: Closure<Fn(f64)>,
     callback_handle: Rc<Cell<Option<i32>>>,
@@ -66,8 +71,10 @@ impl AnimationFrameCallback {
         self.callback_handle.set(Some(handle));
         Ok(())
     }
+}
 
-    pub fn stop(&mut self) {
+impl Callback for AnimationFrameCallback {
+    fn stop(&mut self) {
         if let Some(handle) = self.callback_handle.get() {
             web_sys::window()
                 .unwrap()
@@ -77,7 +84,7 @@ impl AnimationFrameCallback {
         }
     }
 
-    pub fn is_running(&self) -> bool {
+    fn is_running(&self) -> bool {
         self.callback_handle.get().is_some()
     }
 }
@@ -119,8 +126,10 @@ impl IntervalCallback {
         self.callback_handle = Some(handle);
         Ok(())
     }
+}
 
-    pub fn stop(&mut self) {
+impl Callback for IntervalCallback {
+    fn stop(&mut self) {
         if let Some(handle) = self.callback_handle {
             web_sys::window()
                 .unwrap()
@@ -129,7 +138,7 @@ impl IntervalCallback {
         }
     }
 
-    pub fn is_running(&self) -> bool {
+    fn is_running(&self) -> bool {
         self.callback_handle.is_some()
     }
 }
