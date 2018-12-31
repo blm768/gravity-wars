@@ -78,13 +78,12 @@ impl GameHandle {
     pub fn current_player_color(&self) -> Option<Vec<u8>> {
         use rgb::{ComponentMap, ComponentSlice};
         let state = self.game_state.borrow();
-        let color = state.current_player().map(|p| state.players()[p].color)?;
-        Some(
-            color
-                .map(|c| (c.min(0.0).max(1.0) * 255.0) as u8)
-                .as_slice()
-                .to_vec(),
-        )
+        let color = state.current_player().map(|p| {
+            state.players()[p]
+                .color
+                .map(|c| (c * 255.0).max(0.0).min(255.0) as u8)
+        })?;
+        Some(color.as_slice().to_vec())
     }
 
     /// Called by the JavaScript glue code when the game interface has been initialized
