@@ -31,6 +31,7 @@ pub struct Entity {
     pub position: Vector3<f32>,
     pub rotation: UnitQuaternion<f32>,
     pub mass: f32,
+    pub radius: f32,
     pub renderer: Option<Rc<EntityRenderer>>,
     pub missile_trail: Option<MissileTrail>,
     pub ship: Option<Ship>,
@@ -42,6 +43,7 @@ impl Entity {
             position,
             rotation: UnitQuaternion::identity(),
             mass: 0.0,
+            radius: 0.0,
             renderer: None,
             missile_trail: None,
             ship: None,
@@ -210,13 +212,14 @@ impl GameState {
                 .ok_or(InputEventError::NoShipToFireMissile)?;
             let mut entity = Entity::new(ship.position);
             let speed = params.speed * MISSILE_VELOCITY_SCALE;
+            let direction = Vector3::new(params.angle.cos(), params.angle.sin(), 0.0);
             entity.missile_trail = Some(MissileTrail {
                 time_to_live: MISSILE_TIME_TO_LIVE,
-                velocity: Vector3::new(speed * params.angle.cos(), speed * params.angle.sin(), 0.0),
+                velocity: speed * direction,
                 positions: [entity.position].to_vec(),
                 data_version: 0,
             });
-            entity.position = ship.position;
+            entity.position = ship.position + (ship.radius + 0.0001) * direction;
             entity.renderer = (self.make_missile_renderer)();
             entity
         };
@@ -242,6 +245,13 @@ impl GameState {
                     *pos += missile.velocity * TICK_INTERVAL;
                     missile.add_position(*pos);
                     for other in before.iter().chain(after.iter()) {
+                        if other.radius > 0.0
+                            && (other.position - *pos).magnitude_squared()
+                                <= other.radius * other.radius
+                        {
+                            missile.time_to_live = 0.0;
+                            break;
+                        }
                         missile.velocity += other.gravity_at(pos);
                     }
                     // TODO: handle collisions.

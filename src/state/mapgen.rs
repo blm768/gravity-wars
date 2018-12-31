@@ -74,6 +74,7 @@ where
 
         let mut planet = Entity::new(Vector3::new(3.0, 0.0, 0.0));
         planet.mass = 100.0;
+        planet.radius = 1.0;
         planet.renderer = Some(planet_renderer);
         self.game_state.entities.push(planet);
         Ok(())
@@ -85,6 +86,7 @@ where
             .map_err(|_| MapgenError::CouldNotCreateShipRenderers)?;
         for (id, _player) in self.game_state.players.iter().enumerate() {
             let mut ship = self.place_entity()?;
+            ship.radius = 0.5; // TODO: make better collision shapes for ships.
             ship.ship = Some(Ship { player_id: id });
             ship.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
             ship.renderer = Some(Rc::clone(&renderers[id]));
@@ -115,9 +117,8 @@ where
             if self
                 .game_state
                 .iter_entities()
-                .map(|e| (e.position - pos).magnitude())
-                .all(|d| d > 5.0)
-            // TODO: use actual collision radius.
+                .map(|e| (e, (e.position - pos).magnitude_squared()))
+                .all(|(e, dist)| dist > e.radius * e.radius)
             {
                 return Ok(Entity::new(pos));
             }
