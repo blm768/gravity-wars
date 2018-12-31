@@ -30,9 +30,6 @@ pub mod callback;
 pub mod game_handle;
 pub mod webgl;
 
-/// Game state update interval (in milliseconds)
-pub const STATE_UPDATE_INTERVAL: usize = 33;
-
 #[wasm_bindgen]
 extern "C" {
     // TODO: just use web-sys?
@@ -211,7 +208,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     game_handle.add_callback(render_callback);
     let mut update_callback = Box::new(IntervalCallback::new(
         update_game,
-        STATE_UPDATE_INTERVAL as i32,
+        (crate::state::TICK_INTERVAL * 1000.0) as i32,
     ));
     update_callback.start()?;
     game_handle.add_callback(update_callback);

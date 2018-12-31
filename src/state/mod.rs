@@ -11,12 +11,18 @@ use crate::state::event::{InputEvent, InputEventError, MissileParams};
 pub mod event;
 pub mod mapgen;
 
+/// Game state ticks per second
+pub const TICKS_PER_SECOND: u32 = 30;
+/// Game state tick interval (in seconds)
+pub const TICK_INTERVAL: f32 = 1.0 / (TICKS_PER_SECOND as f32);
+
 /// Maximum time to live (in seconds)
 pub const MISSILE_TIME_TO_LIVE: f32 = 30.0;
 /// Maximum missile velocity (in arbitrary units)
 pub const MISSILE_MAX_VELOCITY: f32 = 10.0;
 /// Scaling factor from missile velocity units to actual game units per second
-pub const MISSILE_VELOCITY_SCALE: f32 = 0.1;
+pub const MISSILE_VELOCITY_SCALE: f32 = 1.0;
+
 /// Gravitational constant
 pub const GRAVITATIONAL_CONSTANT: f32 = 0.0001;
 
@@ -232,8 +238,8 @@ impl GameState {
             } = entity
             {
                 if missile.time_to_live > 0.0 {
-                    missile.time_to_live -= 1.0; // TODO: figure out time handling properly...
-                    *pos += missile.velocity;
+                    missile.time_to_live -= TICK_INTERVAL;
+                    *pos += missile.velocity * TICK_INTERVAL;
                     missile.add_position(*pos);
                     for other in before.iter().chain(after.iter()) {
                         missile.velocity += other.gravity_at(pos);
