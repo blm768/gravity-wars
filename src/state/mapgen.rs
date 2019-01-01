@@ -88,7 +88,7 @@ where
             let mut ship = self.place_entity()?;
             ship.radius = 0.5; // TODO: make better collision shapes for ships.
             ship.ship = Some(Ship { player_id: id });
-            ship.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
+            ship.transform.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
             ship.renderer = Some(Rc::clone(&renderers[id]));
             self.game_state.entities.push(ship)
         }
@@ -117,7 +117,7 @@ where
             if self
                 .game_state
                 .iter_entities()
-                .map(|e| (e, (e.position - pos).magnitude_squared()))
+                .map(|e| (e, (e.position() - pos).magnitude_squared()))
                 .all(|(e, dist)| dist > e.radius * e.radius)
             {
                 return Ok(Entity::new(pos));

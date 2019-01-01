@@ -1,7 +1,8 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use nalgebra::{Matrix4, Translation, UnitQuaternion, Vector3};
+use nalgebra::base::dimension::U3;
+use nalgebra::{Similarity, Translation, UnitQuaternion, Vector3};
 
 use crate::rendering::light::PointLight;
 use crate::rendering::scene::Camera;
@@ -28,8 +29,7 @@ pub const GRAVITATIONAL_CONSTANT: f32 = 0.0001;
 
 #[derive(Debug)]
 pub struct Entity {
-    pub position: Vector3<f32>,
-    pub rotation: UnitQuaternion<f32>,
+    pub transform: EntityTransform,
     pub mass: f32,
     pub radius: f32,
     pub renderer: Option<Rc<EntityRenderer>>,
@@ -40,8 +40,7 @@ pub struct Entity {
 impl Entity {
     pub fn new(position: Vector3<f32>) -> Entity {
         Entity {
-            position,
-            rotation: UnitQuaternion::identity(),
+            transform: EntityTransform::at_position(position),
             mass: 0.0,
             radius: 0.0,
             renderer: None,
@@ -50,15 +49,36 @@ impl Entity {
         }
     }
 
-    pub fn transform(&self) -> Matrix4<f32> {
-        (Translation::from(self.position) * self.rotation).to_homogeneous()
+    pub fn position(&self) -> &Vector3<f32> {
+        &self.transform.position
     }
 
     /// Returns the gravitational acceleration produced by this entity on a mass at pos
     pub fn gravity_at(&self, pos: &Vector3<f32>) -> Vector3<f32> {
-        let difference = self.position - pos;
+        let difference = self.transform.position - pos;
         let strength = difference.magnitude_squared() * self.mass * GRAVITATIONAL_CONSTANT;
         difference.normalize() * strength
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct EntityTransform {
+    pub position: Vector3<f32>,
+    pub rotation: UnitQuaternion<f32>,
+    pub scale: f32,
+}
+
+impl EntityTransform {
+    pub fn at_position(position: Vector3<f32>) -> EntityTransform {
+        EntityTransform {
+            position,
+            rotation: UnitQuaternion::identity(),
+            scale: 1.0,
+        }
+    }
+
+    pub fn to_similarity(&self) -> Similarity<f32, U3, UnitQuaternion<f32>> {
+        Similarity::from_parts(Translation::from(self.position), self.rotation, self.scale)
     }
 }
 
@@ -210,16 +230,16 @@ impl GameState {
             let ship = self
                 .get_ship()
                 .ok_or(InputEventError::NoShipToFireMissile)?;
-            let mut entity = Entity::new(ship.position);
+            let mut entity = Entity::new(*ship.position());
             let speed = params.speed * MISSILE_VELOCITY_SCALE;
             let direction = Vector3::new(params.angle.cos(), params.angle.sin(), 0.0);
             entity.missile_trail = Some(MissileTrail {
                 time_to_live: MISSILE_TIME_TO_LIVE,
                 velocity: speed * direction,
-                positions: [entity.position].to_vec(),
+                positions: [*entity.position()].to_vec(),
                 data_version: 0,
             });
-            entity.position = ship.position + (ship.radius + 0.0001) * direction;
+            entity.transform.position = ship.position() + (ship.radius + 0.0001) * direction;
             entity.renderer = (self.make_missile_renderer)();
             entity
         };
@@ -234,19 +254,15 @@ impl GameState {
             // Break off mutable slices to all of the other entities.
             let (before, after) = entities.split_at_mut(i);
             let (entity, after) = after.split_first_mut().unwrap();
-            if let Entity {
-                position: ref mut pos,
-                missile_trail: Some(ref mut missile),
-                ..
-            } = entity
-            {
+            if let Some(ref mut missile) = entity.missile_trail {
+                let pos = &mut entity.transform.position;
                 if missile.time_to_live > 0.0 {
                     missile.time_to_live -= TICK_INTERVAL;
                     *pos += missile.velocity * TICK_INTERVAL;
                     missile.add_position(*pos);
                     for other in before.iter().chain(after.iter()) {
                         if other.radius > 0.0
-                            && (other.position - *pos).magnitude_squared()
+                            && (other.position() - *pos).magnitude_squared()
                                 <= other.radius * other.radius
                         {
                             missile.time_to_live = 0.0;
