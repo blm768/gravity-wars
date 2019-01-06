@@ -21,6 +21,7 @@ opt-level = 0
 opt-level = 2
 
 [dependencies]
+console_error_panic_hook = "0.1.5"
 js-sys = "0.3.5"
 nalgebra = "0.16.12"
 rgb = "0.8"
