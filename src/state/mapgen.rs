@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 use std::rc::Rc;
 
 use nalgebra::{UnitQuaternion, Vector3};
+use rand::distributions::{Distribution, Normal};
 use rand::{self, Rng};
 
 use crate::meshgen;
@@ -16,6 +17,23 @@ use crate::state_renderer::{GameRenderer, MeshRenderer};
 pub const PLAYER_COLORS: &[(f32, f32, f32)] = &[(1.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 1.0, 0.0)];
 // Maximum number of tries to place an entity
 const MAX_PLACE_ENTITY_TRIES: usize = 256;
+
+// Mean planet radius
+const PLANET_RAD_MEAN: f64 = 12.0;
+// Standard deviation of planet radius
+const PLANET_RAD_STD_DEV: f64 = 5.0;
+// Minimum planet radius
+const PLANET_RAD_MIN: f64 = 0.1;
+// Mean planet area
+const PLANET_AREA_MEAN: f64 = std::f64::consts::PI * PLANET_RAD_MEAN * PLANET_RAD_MEAN;
+// Mean number of planets per square unit of map space
+const PLANET_FREQ_MEAN: f64 = 0.10 / PLANET_AREA_MEAN;
+// Standard deviation of planets per square unit of map space
+const PLANET_FREQ_STD_DEV: f64 = 0.05 / PLANET_AREA_MEAN;
+// Mean planet density
+const PLANET_DENS_MEAN: f64 = 3.0;
+// Standard deviation of planet density
+const PLANET_DENS_STD_DEV: f64 = 1.0;
 
 #[derive(Clone, Copy, Debug)]
 pub enum MapgenError {
@@ -42,8 +60,8 @@ where
 {
     pub fn generate_map(&mut self) -> Result<(), MapgenError> {
         self.add_players();
-        self.add_ships()?;
         self.add_planets()?;
+        self.add_ships()?;
         Ok(())
     }
 
@@ -72,11 +90,33 @@ where
             .map_err(|_| MapgenError::CouldNotCreatePlanetRenderer)?;
         let planet_renderer = Rc::new(MeshRenderer::new(renderer, planet_mesh));
 
-        let mut planet = Entity::new(Vector3::new(3.0, 0.0, 0.0));
-        planet.mass = 100.0;
-        planet.radius = 1.0;
-        planet.renderer = Some(planet_renderer);
-        self.game_state.entities.push(planet);
+        let num_planets = {
+            let distribution = Normal::new(PLANET_FREQ_MEAN, PLANET_FREQ_STD_DEV);
+            let density = distribution.sample(&mut rand::thread_rng()) as f32;
+            let count = (density * self.width * self.height).round() as usize;
+            count.max(1)
+        };
+
+        let radius_distribution = Normal::new(PLANET_RAD_MEAN, PLANET_RAD_STD_DEV);
+        let density_distribution = Normal::new(PLANET_DENS_MEAN, PLANET_DENS_STD_DEV);
+        for _ in 0..num_planets {
+            let radius = radius_distribution
+                .sample(&mut rand::thread_rng())
+                .max(PLANET_RAD_MIN) as f32;
+            if let Ok(mut planet) = self.place_entity(radius) {
+                let density = density_distribution
+                    .sample(&mut rand::thread_rng())
+                    .max(0.0) as f32;
+                let volume = (4.0 / 3.0) * std::f32::consts::PI * planet.radius.powi(3);
+                planet.mass = volume * density;
+                planet.transform.scale = planet.radius;
+                planet.renderer = Some(Rc::clone(&planet_renderer) as Rc<dyn EntityRenderer>);
+                self.game_state.entities.push(planet);
+            } else {
+                crate::glue::log(&format!("Unable to place planet with radius {}", radius));
+            }
+        }
+
         Ok(())
     }
 
@@ -85,8 +125,7 @@ where
             .make_player_ship_renderers()
             .map_err(|_| MapgenError::CouldNotCreateShipRenderers)?;
         for (id, _player) in self.game_state.players.iter().enumerate() {
-            let mut ship = self.place_entity()?;
-            ship.radius = 0.5; // TODO: make better collision shapes for ships.
+            let mut ship = self.place_entity(0.5)?; // TODO: make better collision shapes for ships.
             ship.ship = Some(Ship { player_id: id });
             ship.transform.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
             ship.renderer = Some(Rc::clone(&renderers[id]));
@@ -105,22 +144,24 @@ where
         Ok(renderers)
     }
 
-    fn place_entity(&self) -> Result<Entity, MapgenError> {
+    fn place_entity(&self, radius: f32) -> Result<Entity, MapgenError> {
         let half_width = self.width * 0.5;
         let half_height = self.height * 0.5;
         let mut rng = rand::thread_rng();
 
         for _ in 0..MAX_PLACE_ENTITY_TRIES {
-            let x = -half_width + rng.gen::<f32>() * self.width;
-            let y = -half_height + rng.gen::<f32>() * self.height;
+            let x = rng.gen_range(-half_width, half_width);
+            let y = rng.gen_range(-half_height, half_height);
             let pos = Vector3::new(x, y, 0.0);
             if self
                 .game_state
                 .iter_entities()
-                .map(|e| (e, (e.position() - pos).magnitude_squared()))
-                .all(|(e, dist)| dist > e.radius * e.radius)
+                .map(|e| (e, (e.position() - pos).magnitude()))
+                .all(|(e, dist)| dist > e.radius + radius)
             {
-                return Ok(Entity::new(pos));
+                let mut entity = Entity::new(pos);
+                entity.radius = radius;
+                return Ok(entity);
             }
         }
         Err(MapgenError::CouldNotPlaceEntity)

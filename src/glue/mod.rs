@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 
 use std::io::Cursor;
+use std::panic;
 use std::rc::Rc;
 use std::str;
 
@@ -29,6 +30,9 @@ pub mod asset;
 pub mod callback;
 pub mod game_handle;
 pub mod webgl;
+
+const DEFAULT_MAP_WIDTH: f32 = 150.0;
+const DEFAULT_MAP_HEIGHT: f32 = 100.0;
 
 #[wasm_bindgen]
 extern "C" {
@@ -98,6 +102,7 @@ fn load_program_from_assets(
 
 #[wasm_bindgen]
 pub fn start_game(assets: &AssetData) -> JsValue {
+    panic::set_hook(Box::new(console_error_panic_hook::hook)); // TODO: make this happen earlier.
     match try_start_game(assets) {
         Ok(handle) => JsValue::from(handle),
         Err(err) => {
@@ -166,8 +171,8 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     };
     let mut mapgen_params = MapgenParams {
         game_state: &mut state,
-        width: 10.0,
-        height: 10.0,
+        width: DEFAULT_MAP_WIDTH,
+        height: DEFAULT_MAP_HEIGHT,
         num_players: 2,
         game_renderer: Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
         make_ship_renderer: Box::new(make_ship_renderer),
