@@ -8,7 +8,7 @@ gravity_wars.then((gravity_wars) => {
     gravity_wars.load_assets().and_then((assets) => {
         try {
             gameState = gravity_wars.start_game(assets);
-            if (gameInterface) {
+            if (gameState && gameInterface) {
                 gameInterface.onGameReady(gameState);
             }
         } catch (e) {
