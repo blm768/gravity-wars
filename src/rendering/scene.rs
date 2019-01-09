@@ -1,8 +1,9 @@
-use nalgebra::{Orthographic3, Vector3};
+use nalgebra::{Isometry, Matrix4, Orthographic3, Translation, UnitQuaternion, Vector3, U3};
 
 #[derive(Clone, Debug)]
 pub struct Camera {
     pub position: Vector3<f32>,
+    pub rotation: UnitQuaternion<f32>,
     pub aspect_ratio: f32,
     pub log_scale: f32,
 }
@@ -11,6 +12,7 @@ impl Camera {
     pub fn new() -> Camera {
         Camera {
             position: Vector3::new(0.0, 0.0, 0.0),
+            rotation: UnitQuaternion::identity(),
             aspect_ratio: 1.0,
             log_scale: 0.0,
         }
@@ -23,14 +25,11 @@ impl Camera {
     pub fn projection(&self) -> Orthographic3<f32> {
         let scale = self.scale();
         let right = scale * self.aspect_ratio;
-        Orthographic3::new(
-            self.position.x - right,
-            self.position.x + right,
-            self.position.y - scale,
-            self.position.y + scale,
-            -scale,
-            scale,
-        )
+        Orthographic3::new(-right, right, -scale, scale, -scale, scale)
+    }
+
+    pub fn view(&self) -> Isometry<f32, U3, UnitQuaternion<f32>> {
+        Isometry::from_parts(Translation::from(self.position), self.rotation).inverse()
     }
 }
 

@@ -25,7 +25,8 @@ pub struct MaterialShaderInfo {
     pub normal: ShaderParamInfo,
 
     pub projection: ShaderParamInfo,
-    pub model_view: ShaderParamInfo,
+    pub model_transform: ShaderParamInfo,
+    pub view_transform: ShaderParamInfo,
     pub base_color: Option<ShaderParamInfo>,
     pub metal_factor: Option<ShaderParamInfo>,
     pub roughness: Option<ShaderParamInfo>,
@@ -41,7 +42,8 @@ impl MaterialShaderInfo {
             position: ShaderParamInfo::attribute(program, "position")?,
             normal: ShaderParamInfo::attribute(program, "normal")?,
             projection: ShaderParamInfo::uniform(program, "projection")?,
-            model_view: ShaderParamInfo::uniform(program, "modelView")?,
+            model_transform: ShaderParamInfo::uniform(program, "model")?,
+            view_transform: ShaderParamInfo::uniform(program, "view")?,
             base_color: ShaderParamInfo::uniform(program, "material.baseColor").ok(),
             metal_factor: ShaderParamInfo::uniform(program, "material.metal").ok(),
             roughness: ShaderParamInfo::uniform(program, "material.roughness").ok(),
@@ -87,6 +89,7 @@ impl<Context: RenderingContext> MaterialShader<Context> {
 
 pub trait MaterialWorldContext {
     fn projection(&self) -> Matrix4<f32>;
+    fn view(&self) -> Matrix4<f32>;
     fn light(&self) -> &PointLight;
 }
 
@@ -102,6 +105,7 @@ impl<Context: RenderingContext> BoundMaterialShader<Context> {
         world: &MaterialWorldContext,
     ) -> Result<Self, ShaderBindError> {
         let bound_shader = context.bind_shader(Rc::clone(&shader.program))?;
+        bound_shader.set_uniform_mat4(shader.info.view_transform.index, world.view());
         bound_shader.set_uniform_mat4(shader.info.projection.index, world.projection());
         if let Some(ref lights) = shader.info.lights {
             lights.bind_light(world.light(), &bound_shader);

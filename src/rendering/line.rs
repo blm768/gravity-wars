@@ -44,6 +44,7 @@ pub struct LineShaderInfo {
     pub position: ShaderParamInfo,
     pub color: ShaderParamInfo,
     pub projection: ShaderParamInfo,
+    pub view_transform: ShaderParamInfo,
 }
 
 impl LineShaderInfo {
@@ -56,10 +57,12 @@ impl LineShaderInfo {
         let position = ShaderParamInfo::attribute(program, "position")?;
         let color = ShaderParamInfo::uniform(program, "color")?;
         let projection = ShaderParamInfo::uniform(program, "projection")?;
+        let view_transform = ShaderParamInfo::uniform(program, "view")?;
         Ok(LineShaderInfo {
             position,
             color,
             projection,
+            view_transform,
         })
     }
 
@@ -89,6 +92,7 @@ impl<Context: RenderingContext> LineShader<Context> {
 
 pub trait LineWorldContext {
     fn projection(&self) -> Matrix4<f32>;
+    fn view(&self) -> Matrix4<f32>;
 }
 
 pub struct BoundLineShader<Context: RenderingContext> {
@@ -104,6 +108,7 @@ impl<Context: RenderingContext> BoundLineShader<Context> {
     ) -> Result<Self, ShaderBindError> {
         let bound_shader = context.bind_shader(Rc::clone(&shader.program))?;
         bound_shader.set_uniform_mat4(shader.info.projection.index, world.projection());
+        bound_shader.set_uniform_mat4(shader.info.view_transform.index, world.view());
         Ok(BoundLineShader {
             bound_shader,
             info: shader.info.clone(),

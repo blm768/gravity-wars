@@ -34,6 +34,8 @@ float trowbridgeReitzMicrofacetDistribution(float alphaRoughness, float normalDo
     return roughnessSq / (pi * f * f);
 }
 
+uniform mat4 view;
+
 uniform MaterialInfo material;
 uniform PointLight light;
 
@@ -43,15 +45,15 @@ varying vec3 viewNormal;
 void main() {
     vec3 normal = normalize(viewNormal);
 
-    vec3 lightPos = light.position;
-    vec3 lightVect = viewPos - lightPos;
+    vec3 lightPos = (view * vec4(light.position, 1.0)).xyz;
+    vec3 lightVect = lightPos - viewPos;
     float distToLight = length(lightVect);
-    vec3 lightVectNormalized = lightVect / distToLight;
+    lightVect /= distToLight;
     vec3 viewVect = normalize(-viewPos);
-    vec3 halfVect = normalize(lightVectNormalized + viewVect);
+    vec3 halfVect = normalize(lightVect + viewVect);
 
-    float normalDotLight = dot(normal, lightVectNormalized);
-    float lightDotHalf = dot(lightVectNormalized, halfVect);
+    float normalDotLight = dot(normal, lightVect);
+    float lightDotHalf = dot(lightVect, halfVect);
     float normalDotHalf = dot(normal, halfVect);
     float normalDotView = dot(normal, viewVect);
     float viewDotHalf = dot(viewVect, halfVect);
@@ -65,7 +67,8 @@ void main() {
     float diffuse = 1.0 / pi; // Standard Lambert diffuse term
     vec3 reflectance = material.baseColor.xyz * (diffuse + specular);
 
-    vec3 reflectedLight = max(normalDotLight, 0.0) * light.color * reflectance;
+    vec3 incomingLight = light.color / (distToLight / distToLight);
+    vec3 reflectedLight = max(normalDotLight, 0.0) * incomingLight * reflectance;
 
     gl_FragColor = vec4(reflectedLight, material.baseColor.w);
 }

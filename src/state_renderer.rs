@@ -34,7 +34,7 @@ impl<Context: RenderingContext> EntityRenderer for MeshRenderer<Context> {
 
         let model_transform = entity.transform.to_similarity().to_homogeneous();
         bound_shader.set_uniform_mat4(
-            self.renderer.material_shader().info.model_view.index,
+            self.renderer.material_shader().info.model_transform.index,
             model_transform,
         );
         self.mesh.draw(&bound_shader);
@@ -90,6 +90,10 @@ impl MaterialWorldContext for GameState {
         self.camera.projection().into()
     }
 
+    fn view(&self) -> Matrix4<f32> {
+        self.camera.view().into()
+    }
+
     fn light(&self) -> &PointLight {
         &self.light
     }
@@ -98,5 +102,9 @@ impl MaterialWorldContext for GameState {
 impl LineWorldContext for GameState {
     fn projection(&self) -> Matrix4<f32> {
         self.camera.projection().into()
+    }
+
+    fn view(&self) -> Matrix4<f32> {
+        self.camera.view().into()
     }
 }
