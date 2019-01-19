@@ -141,7 +141,7 @@ pub struct GameState {
 impl GameState {
     pub fn new(make_missile_renderer: RendererFactory) -> GameState {
         let light = PointLight {
-            color: Rgb::new(9.0, 9.0, 9.0),
+            color: Rgb::new(1.0, 1.0, 1.0) * 40000.0,
             position: Vector3::new(0.0, 0.0, 90.0),
         };
 
