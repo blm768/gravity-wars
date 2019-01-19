@@ -119,6 +119,10 @@ impl<Context: RenderingContext> BoundMaterialShader<Context> {
     pub fn info(&self) -> &MaterialShaderInfo {
         &self.info
     }
+
+    pub fn bound_shader(&self) -> &BoundShader<Context> {
+        &self.bound_shader
+    }
 }
 
 impl<Context> Deref for BoundMaterialShader<Context>

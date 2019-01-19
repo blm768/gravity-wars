@@ -118,6 +118,10 @@ impl<Context: RenderingContext> BoundLineShader<Context> {
     pub fn info(&self) -> &LineShaderInfo {
         &self.info
     }
+
+    pub fn bound_shader(&self) -> &BoundShader<Context> {
+        &self.bound_shader
+    }
 }
 
 impl<Context> Deref for BoundLineShader<Context>

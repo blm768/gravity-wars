@@ -284,6 +284,10 @@ pub struct WebGlBoundShader {
 }
 
 impl BoundShader<WebGlContext> for WebGlBoundShader {
+    fn program(&self) -> &ShaderProgram {
+        &self.shader
+    }
+
     fn draw_triangles(&self, count: usize) {
         self.context
             .draw_arrays(WebGlRenderingContext::TRIANGLES, 0, count as i32);
