@@ -2,9 +2,9 @@ use std::fmt::Debug;
 use std::rc::Rc;
 
 use nalgebra::base::dimension::U3;
-use nalgebra::{Similarity, Translation, UnitQuaternion, Vector3};
+use nalgebra::{Similarity, Translation, Unit, UnitQuaternion, Vector3};
 
-use crate::rendering::light::PointLight;
+use crate::rendering::light::SunLight;
 use crate::rendering::scene::Camera;
 use crate::rendering::Rgb;
 use crate::state::event::{InputEvent, InputEventError, MissileParams};
@@ -127,6 +127,11 @@ pub struct Player {
     pub color: Rgb,
 }
 
+pub struct WorldLight {
+    pub sun: SunLight,
+    pub ambient: Rgb,
+}
+
 pub type RendererFactory = Box<FnMut() -> Option<Rc<EntityRenderer>>>;
 
 pub struct GameState {
@@ -134,15 +139,18 @@ pub struct GameState {
     players: Box<[Player]>,
     current_player: Option<usize>,
     pub camera: Camera,
-    pub light: PointLight,
+    pub light: WorldLight,
     pub make_missile_renderer: RendererFactory,
 }
 
 impl GameState {
     pub fn new(make_missile_renderer: RendererFactory) -> GameState {
-        let light = PointLight {
-            color: Rgb::new(1.0, 1.0, 1.0) * 40000.0,
-            position: Vector3::new(0.0, 0.0, 90.0),
+        let light = WorldLight {
+            sun: SunLight {
+                color: Rgb::new(1.0, 1.0, 1.0) * 3.0,
+                direction: Unit::new_normalize(Vector3::new(-0.2, -0.1, -1.0)),
+            },
+            ambient: Rgb::new(1.0, 1.0, 1.0) * 0.3,
         };
 
         GameState {

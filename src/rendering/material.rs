@@ -5,10 +5,10 @@ use nalgebra::Matrix4;
 
 use crate::rendering;
 use crate::rendering::context::RenderingContext;
-use crate::rendering::light::PointLight;
-use crate::rendering::light::ShaderLightInfo;
+use crate::rendering::light::{LightShaderInfo, SunLight};
 use crate::rendering::shader::{BoundShader, ShaderBindError};
 use crate::rendering::shader::{ShaderInfoError, ShaderParamInfo, ShaderProgram};
+use crate::rendering::Rgb;
 use crate::rendering::Rgba;
 
 #[derive(Clone, Debug)]
@@ -31,7 +31,7 @@ pub struct MaterialShaderInfo {
     pub metal_factor: Option<ShaderParamInfo>,
     pub roughness: Option<ShaderParamInfo>,
 
-    pub lights: Option<ShaderLightInfo>,
+    pub lights: LightShaderInfo,
 }
 
 impl MaterialShaderInfo {
@@ -47,7 +47,7 @@ impl MaterialShaderInfo {
             base_color: ShaderParamInfo::uniform(program, "material.baseColor").ok(),
             metal_factor: ShaderParamInfo::uniform(program, "material.metal").ok(),
             roughness: ShaderParamInfo::uniform(program, "material.roughness").ok(),
-            lights: ShaderLightInfo::from_program(program),
+            lights: LightShaderInfo::from_program(program),
         })
     }
 
@@ -90,7 +90,8 @@ impl<Context: RenderingContext> MaterialShader<Context> {
 pub trait MaterialWorldContext {
     fn projection(&self) -> Matrix4<f32>;
     fn view(&self) -> Matrix4<f32>;
-    fn light(&self) -> &PointLight;
+    fn sun(&self) -> &SunLight;
+    fn ambient(&self) -> Rgb;
 }
 
 pub struct BoundMaterialShader<Context: RenderingContext> {
@@ -105,11 +106,11 @@ impl<Context: RenderingContext> BoundMaterialShader<Context> {
         world: &MaterialWorldContext,
     ) -> Result<Self, ShaderBindError> {
         let bound_shader = context.bind_shader(Rc::clone(&shader.program))?;
-        bound_shader.set_uniform_mat4(shader.info.view_transform.index, world.view());
-        bound_shader.set_uniform_mat4(shader.info.projection.index, world.projection());
-        if let Some(ref lights) = shader.info.lights {
-            lights.bind_light(world.light(), &bound_shader);
-        }
+        let info = &shader.info;
+        bound_shader.set_uniform_mat4(info.view_transform.index, world.view());
+        bound_shader.set_uniform_mat4(info.projection.index, world.projection());
+        info.lights.bind_sun(world.sun(), &bound_shader);
+        info.lights.bind_ambient(&world.ambient(), &bound_shader);
         Ok(BoundMaterialShader {
             bound_shader,
             info: shader.info.clone(),

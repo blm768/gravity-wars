@@ -7,7 +7,7 @@ use std::error::Error;
 use std::rc::Rc;
 
 use crate::rendering::context::RenderingContext;
-use crate::rendering::light::PointLight;
+use crate::rendering::light::SunLight;
 use crate::rendering::line::{BoundLineShader, LineShader, LineWorldContext, PolyLine};
 use crate::rendering::material::{BoundMaterialShader, MaterialShader, MaterialWorldContext};
 use crate::rendering::mesh::Mesh;
@@ -94,8 +94,12 @@ impl MaterialWorldContext for GameState {
         self.camera.view().into()
     }
 
-    fn light(&self) -> &PointLight {
-        &self.light
+    fn sun(&self) -> &SunLight {
+        &self.light.sun
+    }
+
+    fn ambient(&self) -> Rgb {
+        self.light.ambient
     }
 }
 
