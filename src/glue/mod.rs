@@ -159,7 +159,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         .ok_or_else(|| String::from("Unable to find mesh"))?;
     let ship_mesh = loader
         .load_mesh(&first_mesh)
-        .map_err(|_| String::from("Unable to load mesh"))?;
+        .map_err(|e| format!("Unable to load mesh: {:?}", e))?;
 
     let renderer_clone = Rc::clone(&renderer);
     let make_ship_renderer = move |player: &Player| {

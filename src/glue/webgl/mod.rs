@@ -14,6 +14,7 @@ use crate::rendering::shader::{BoundShader, ShaderBindError, ShaderParamInfo};
 
 pub mod buffer;
 pub mod game_renderer;
+pub mod texture;
 
 #[repr(u32)]
 #[derive(Clone, Copy)]
@@ -250,6 +251,7 @@ impl RenderingContext for WebGlContext {
     type IndexBuffer = buffer::IndexBuffer;
     type ShaderProgram = ShaderProgram;
     type BoundShader = WebGlBoundShader;
+    type Texture = texture::Texture;
 
     fn make_attribute_buffer(&self) -> Result<Self::AttributeBuffer, ()> {
         Self::AttributeBuffer::new(self.gl_context.clone()).ok_or(())
@@ -257,6 +259,10 @@ impl RenderingContext for WebGlContext {
 
     fn make_index_buffer(&self) -> Result<Self::IndexBuffer, ()> {
         Self::IndexBuffer::new(self.gl_context.clone()).ok_or(())
+    }
+
+    fn make_texture(&self) -> Result<Self::Texture, ()> {
+        Self::Texture::new(self.gl_context.clone()).ok_or(())
     }
 
     fn bind_shader(

@@ -100,7 +100,7 @@ impl GridMesh {
         normal_binding.set_stride(stride);
         let normals = VertexAttribute::new(Rc::clone(&attribute_buf), normal_binding);
 
-        PrimitiveGeometry::new(Some(indices), positions, normals)
+        Ok(PrimitiveGeometry::new(Some(indices), positions, normals))
     }
 }
 
@@ -201,7 +201,7 @@ pub fn gen_sphere<Context>(
     radius: f32,
     segments: usize,
     context: &Context,
-    material: Material,
+    material: Material<Context>,
 ) -> Result<Mesh<Context>, ()>
 where
     Context: RenderingContext,

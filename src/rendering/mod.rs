@@ -6,6 +6,7 @@ pub mod material;
 pub mod mesh;
 pub mod scene;
 pub mod shader;
+pub mod texture;
 
 use nalgebra::{Vector3, Vector4};
 use rgb::{RGB, RGBA};

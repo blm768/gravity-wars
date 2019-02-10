@@ -32,7 +32,7 @@ impl<Context: RenderingContext> Clone for Mesh<Context> {
 
 #[derive(Debug)]
 pub struct Primitive<Context: RenderingContext> {
-    pub material: Material,
+    pub material: Material<Context>,
     pub geometry: Rc<PrimitiveGeometry<Context>>,
 }
 
@@ -65,12 +65,12 @@ impl<Context: RenderingContext> PrimitiveGeometry<Context> {
         indices: Option<ElementIndices<Context>>,
         positions: VertexAttribute<Context>,
         normals: VertexAttribute<Context>,
-    ) -> Result<Self, ()> {
-        Ok(PrimitiveGeometry {
+    ) -> Self {
+        PrimitiveGeometry {
             indices,
             positions,
             normals,
-        })
+        }
     }
 
     /// Binds each primitive's buffers and makes the appropriate WebGL draw calls.

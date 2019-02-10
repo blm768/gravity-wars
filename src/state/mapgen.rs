@@ -82,6 +82,7 @@ where
         // TODO: break down primitives so we can more easily share buffers between planets that have different materials.
         let planet_material = Material {
             base_color: Rgba::new(0.0, 0.0, 1.0, 1.0),
+            base_color_texture: None,
             metal_factor: 0.0,
             roughness: 1.0,
             extras: None,

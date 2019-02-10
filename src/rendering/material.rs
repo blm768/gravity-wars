@@ -8,15 +8,28 @@ use crate::rendering::context::RenderingContext;
 use crate::rendering::light::{LightShaderInfo, SunLight};
 use crate::rendering::shader::{BoundShader, ShaderBindError};
 use crate::rendering::shader::{ShaderInfoError, ShaderParamInfo, ShaderProgram};
-use crate::rendering::Rgb;
-use crate::rendering::Rgba;
+use crate::rendering::{Rgb, Rgba};
 
-#[derive(Clone, Debug)]
-pub struct Material {
+#[derive(Debug)]
+pub struct Material<Context: RenderingContext> {
     pub base_color: Rgba,
+    pub base_color_texture: Option<Rc<Context::Texture>>,
     pub metal_factor: f32,
     pub roughness: f32,
     pub extras: Option<serde_json::Value>,
+}
+
+// TODO: why doesn't #[derive(Clone)] work properly?
+impl<Context: RenderingContext> Clone for Material<Context> {
+    fn clone(&self) -> Self {
+        Material {
+            base_color: self.base_color.clone(),
+            base_color_texture: self.base_color_texture.clone(),
+            metal_factor: self.metal_factor,
+            roughness: self.roughness,
+            extras: self.extras.clone(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -53,7 +66,7 @@ impl MaterialShaderInfo {
 
     pub fn bind_material<Context: RenderingContext>(
         &self,
-        material: &Material,
+        material: &Material<Context>,
         context: &BoundShader<Context>,
     ) {
         if let Some(ref base_color) = self.base_color {
@@ -62,6 +75,7 @@ impl MaterialShaderInfo {
                 rendering::rgba_as_vec4(&material.base_color),
             );
         }
+        // TODO: handle textures.
         if let Some(ref metal_factor) = self.metal_factor {
             context.set_uniform_f32(metal_factor.index, material.metal_factor);
         }
