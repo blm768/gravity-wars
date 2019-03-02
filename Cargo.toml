@@ -21,15 +21,15 @@ opt-level = 0
 opt-level = 2
 
 [dependencies]
-console_error_panic_hook = "0.1.5"
-js-sys = "0.3.10"
+console_error_panic_hook = "0.1.6"
+js-sys = "0.3.14"
 image = "0.19.0" # TODO: upgrade once gltf crate supports a newer version.
 nalgebra = "0.16.13"
-rgb = "0.8.12"
-serde_json = "1.0.38"
+rgb = "0.8.13"
+serde_json = "1.0.39"
 
 [dependencies.gltf]
-version = "0.11"
+version = "0.11.3"
 features = ["extras"]
 
 [dependencies.rand]
@@ -37,7 +37,7 @@ version = "0.6.5"
 features = ["wasm-bindgen"]
 
 [dependencies.wasm-bindgen]
-version = "0.2.33"
+version = "0.2.37"
 features = ["nightly"]
 
 [dependencies.web-sys]
