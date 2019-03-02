@@ -8,8 +8,8 @@ use std::str;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys;
+use web_sys::WebGlRenderingContext;
 use web_sys::{Element, HtmlCanvasElement};
-use web_sys::{WebGlRenderingContext, WebGlShader};
 
 use gltf::Gltf;
 
@@ -17,10 +17,13 @@ use crate::glue::asset::{AssetData, AssetLoader};
 use crate::glue::callback::{AnimationFrameCallback, IntervalCallback};
 use crate::glue::game_handle::GameHandle;
 use crate::glue::webgl::game_renderer::WebGlRenderer;
-use crate::glue::webgl::{ShaderProgram, ShaderType, WebGlContext};
+use crate::glue::webgl::shader::{Shader, ShaderProgram};
+use crate::glue::webgl::WebGlContext;
+use crate::rendering::context::RenderingContext;
 use crate::rendering::line::LineShader;
 use crate::rendering::material::MaterialShader;
 use crate::rendering::mesh::gltf::GltfLoader;
+use crate::rendering::shader::ShaderType;
 use crate::rendering::Rgb;
 use crate::state::mapgen::{self, MapgenParams};
 use crate::state::{EntityRenderer, GameState, Player};
@@ -75,14 +78,15 @@ pub fn load_assets() -> AssetLoader {
 fn compile_shader_from_asset(
     url: &str,
     assets: &AssetData,
-    context: &WebGlRenderingContext,
+    context: &WebGlContext,
     shader_type: ShaderType,
-) -> Result<WebGlShader, String> {
+) -> Result<Shader, String> {
     match assets.get(url) {
         Ok(ref data) => {
             let text = str::from_utf8(data).unwrap_or("<UTF-8 decoding error>");
-            webgl::compile_shader(context, shader_type, text)
-                .map_err(|e| format!("Error compiling shader {}: {}", url, e))
+            context
+                .compile_shader(shader_type, text)
+                .map_err(|e| format!("{}: {}", url, e))
         }
         Err(error) => Err(format!("Unable to load asset {}: {}", url, error)),
     }
@@ -92,12 +96,14 @@ fn load_program_from_assets(
     vert_url: &str,
     frag_url: &str,
     assets: &AssetData,
-    context: Rc<WebGlRenderingContext>,
+    context: &WebGlContext,
 ) -> Result<ShaderProgram, String> {
-    let vertex_shader = compile_shader_from_asset(vert_url, assets, &context, ShaderType::Vertex)?;
+    let vertex_shader = compile_shader_from_asset(vert_url, assets, context, ShaderType::Vertex)?;
     let fragment_shader =
-        compile_shader_from_asset(frag_url, assets, &context, ShaderType::Fragment)?;
-    webgl::ShaderProgram::link(context, [vertex_shader, fragment_shader].iter())
+        compile_shader_from_asset(frag_url, assets, context, ShaderType::Fragment)?;
+    context
+        .link_shader_program([vertex_shader, fragment_shader].iter())
+        .map_err(|e| format!("{}", e))
 }
 
 #[wasm_bindgen]
@@ -122,13 +128,13 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         "shaders/vertex.glsl",
         "shaders/fragment.glsl",
         assets,
-        Rc::clone(context.gl_context()),
+        &context,
     )?;
     let line_program = load_program_from_assets(
         "shaders/line_vertex.glsl",
         "shaders/line_fragment.glsl",
         assets,
-        Rc::clone(context.gl_context()),
+        &context,
     )?;
     let mat_shader = MaterialShader::new(mat_program).map_err(|e| format!("{:?}", e))?;
     let line_shader = LineShader::new(line_program).map_err(|e| format!("{:?}", e))?;

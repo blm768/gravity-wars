@@ -36,6 +36,18 @@ impl ShaderParamInfo {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum ShaderType {
+    Vertex,
+    Fragment,
+}
+
+pub trait Shader: Debug {
+    type RenderingContext: RenderingContext + ?Sized;
+
+    fn shader_type(&self) -> ShaderType;
+}
+
 pub trait ShaderProgram: Debug {
     type RenderingContext: RenderingContext + ?Sized;
 
