@@ -1,7 +1,8 @@
 use std::f32::consts::PI;
 use std::rc::Rc;
 
-use nalgebra::{UnitQuaternion, Vector3};
+use nalgebra::{Isometry, Translation, UnitComplex, UnitQuaternion, Vector2, Vector3};
+use ncollide2d::shape::{Ball, Shape};
 use rand::distributions::{Distribution, Normal};
 use rand::{self, Rng};
 
@@ -104,13 +105,14 @@ where
             let radius = radius_distribution
                 .sample(&mut rand::thread_rng())
                 .max(PLANET_RAD_MIN) as f32;
-            if let Ok(mut planet) = self.place_entity(radius) {
+            let shape = Box::new(Ball::new(radius));
+            if let Ok(mut planet) = self.place_entity(shape) {
                 let density = density_distribution
                     .sample(&mut rand::thread_rng())
                     .max(0.0) as f32;
-                let volume = (4.0 / 3.0) * std::f32::consts::PI * planet.radius.powi(3);
+                let volume = (4.0 / 3.0) * std::f32::consts::PI * radius.powi(3);
                 planet.mass = volume * density;
-                planet.transform.scale = planet.radius;
+                planet.transform.scale = radius;
                 planet.renderer = Some(Rc::clone(&planet_renderer) as Rc<dyn EntityRenderer>);
                 self.game_state.entities.push(planet);
             } else {
@@ -126,7 +128,8 @@ where
             .make_player_ship_renderers()
             .map_err(|_| MapgenError::CouldNotCreateShipRenderers)?;
         for (id, _player) in self.game_state.players.iter().enumerate() {
-            let mut ship = self.place_entity(0.5)?; // TODO: make better collision shapes for ships.
+            let shape = Box::new(Ball::new(0.5)); // TODO: make better collision shapes for ships.
+            let mut ship = self.place_entity(shape)?;
             ship.ship = Some(Ship { player_id: id });
             ship.transform.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
             ship.renderer = Some(Rc::clone(&renderers[id]));
@@ -145,7 +148,7 @@ where
         Ok(renderers)
     }
 
-    fn place_entity(&self, radius: f32) -> Result<Entity, MapgenError> {
+    fn place_entity(&self, shape: Box<dyn Shape<f32>>) -> Result<Entity, MapgenError> {
         let half_width = self.width * 0.5;
         let half_height = self.height * 0.5;
         let mut rng = rand::thread_rng();
@@ -153,15 +156,15 @@ where
         for _ in 0..MAX_PLACE_ENTITY_TRIES {
             let x = rng.gen_range(-half_width, half_width);
             let y = rng.gen_range(-half_height, half_height);
-            let pos = Vector3::new(x, y, 0.0);
+            let pos = Vector2::new(x, y);
+            let transform = Isometry::from_parts(Translation::from(pos), UnitComplex::identity());
             if self
                 .game_state
                 .iter_entities()
-                .map(|e| (e, (e.position() - pos).magnitude()))
-                .all(|(e, dist)| dist > e.radius + radius)
+                .all(|e| !e.collides_with_shape(shape.as_ref(), &transform))
             {
-                let mut entity = Entity::new(pos);
-                entity.radius = radius;
+                let mut entity = Entity::new(Vector3::new(pos.x, pos.y, 0.0));
+                entity.collision_shape = Some(shape);
                 return Ok(entity);
             }
         }
