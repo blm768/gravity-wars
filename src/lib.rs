@@ -1,5 +1,4 @@
 #![feature(custom_attribute)]
-#![feature(try_from)]
 
 pub mod glue;
 pub mod meshgen;

@@ -88,8 +88,8 @@ impl GameHandle {
 
     /// Called by the JavaScript glue code when the game interface has been initialized
     #[wasm_bindgen(js_name = onInterfaceReady)]
-    pub fn on_interface_ready(&self, interface: GameInterface) {
-        *self.interface.borrow_mut() = Some(interface);
+    pub fn on_interface_ready(&self, game_interface: GameInterface) {
+        *self.interface.borrow_mut() = Some(game_interface);
     }
 
     /// Registers a camera pan event with the given X and Y deltas (in pixels)
@@ -124,7 +124,7 @@ impl GameHandle {
     }
 }
 
-#[wasm_bindgen(module = "./glue")]
+#[wasm_bindgen(raw_module = "./glue")]
 extern "C" {
     /// Handle to the game's UI controls
     pub type GameInterface;

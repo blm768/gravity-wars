@@ -16,7 +16,7 @@ extern "C" {
     pub fn status(response: &Response) -> u32;
 }
 
-#[wasm_bindgen(module = "./glue")]
+#[wasm_bindgen(raw_module = "./glue.js")]
 extern "C" {
     #[wasm_bindgen(js_name=fetchAsset)]
     fn fetch_asset(uri: &str, callback: &FetchCallback);
