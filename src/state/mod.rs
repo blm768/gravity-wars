@@ -152,9 +152,14 @@ impl MissileTrail {
 
     pub fn time_to_collision(&self, entity: &Entity, solid: bool) -> Option<f32> {
         if let (Some(pos), Some(shape)) = (&self.positions.last(), &entity.collision_shape) {
-            let ray = Ray::new(pos.xy().into(), self.velocity.xy());
-            let transform = entity.collision_transform();
-            shape.toi_with_ray(&transform, &ray, solid)
+            let velocity = self.velocity.xy();
+            if velocity.magnitude_squared() > 0.0 {
+                let ray = Ray::new(pos.xy().into(), velocity.xy());
+                let transform = entity.collision_transform();
+                shape.toi_with_ray(&transform, &ray, solid)
+            } else {
+                None
+            }
         } else {
             None
         }

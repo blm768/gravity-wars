@@ -114,13 +114,10 @@ impl GameHandle {
     }
 
     #[wasm_bindgen(js_name = onFire)]
-    pub fn on_fire(&mut self, angle: f32) {
+    pub fn on_fire(&mut self, angle: f32, speed: f32) {
         self.input_queue
             .borrow_mut()
-            .push_back(InputEvent::FireMissile(MissileParams {
-                angle,
-                speed: 10.0,
-            }));
+            .push_back(InputEvent::FireMissile(MissileParams { angle, speed }));
     }
 }
 
