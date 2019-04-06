@@ -23,7 +23,7 @@ pub struct Material<Context: RenderingContext> {
 impl<Context: RenderingContext> Clone for Material<Context> {
     fn clone(&self) -> Self {
         Material {
-            base_color: self.base_color.clone(),
+            base_color: self.base_color,
             base_color_texture: self.base_color_texture.clone(),
             metal_factor: self.metal_factor,
             roughness: self.roughness,

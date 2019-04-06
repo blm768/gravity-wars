@@ -61,7 +61,7 @@ impl Shader {
         } else {
             Err(context
                 .get_shader_info_log(&shader)
-                .map(|e| ShaderCreationError::FailedToCompile(e))
+                .map(ShaderCreationError::FailedToCompile)
                 .unwrap_or_else(|| {
                     ShaderCreationError::FailedToCompile(String::from("Unknown compilation error"))
                 }))
@@ -143,7 +143,7 @@ impl ShaderProgram {
         } else {
             Err(context
                 .get_program_info_log(&program)
-                .map(|e| ShaderLinkError::FailedToLink(e))
+                .map(ShaderLinkError::FailedToLink)
                 .unwrap_or_else(|| {
                     ShaderLinkError::FailedToLink(String::from("Unknown linking error"))
                 }))

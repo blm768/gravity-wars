@@ -91,7 +91,7 @@ where
         let image = match texture_info {
             Some(t) => Some(
                 self.load_image(&t.source().source())
-                    .map_err(|e| MaterialLoadError::ImageLoadError(e))?,
+                    .map_err(MaterialLoadError::ImageLoadError)?,
             ),
             None => None,
         };
@@ -102,7 +102,7 @@ where
                     .make_texture()
                     .map_err(|_| MaterialLoadError::TextureCreationError)?;
                 tex.set_image_data(image)
-                    .map_err(|e| MaterialLoadError::SetTextureDataError(e))?;
+                    .map_err(MaterialLoadError::SetTextureDataError)?;
                 Some(Rc::new(tex)) // TODO: share images between loads.
             }
             None => None,
@@ -133,7 +133,7 @@ where
     ) -> Result<Primitive<Context>, PrimitiveLoadError> {
         let material = self
             .load_material(&primitive.material())
-            .map_err(|e| PrimitiveLoadError::MaterialLoadError(e))?;
+            .map_err(PrimitiveLoadError::MaterialLoadError)?;
         let (_, pos_accessor) = primitive
             .attributes()
             .find(|(semantic, _)| *semantic == Semantic::Positions)
@@ -201,11 +201,11 @@ where
             Source::View { view, mime_type } => {
                 let buf = self
                     .load_slice_from_view(view)
-                    .map_err(|e| ImageLoadError::BufferLoadError(e))?;
+                    .map_err(ImageLoadError::BufferLoadError)?;
                 let image_format = image_format_from_mime(mime_type)
                     .ok_or(ImageLoadError::UnsupportedImageFormat)?;
                 let image = image::load_from_memory_with_format(buf, image_format)
-                    .map_err(|e| ImageLoadError::ImageError(e))?;
+                    .map_err(ImageLoadError::ImageError)?;
                 Ok(image.to_rgb())
             }
             Source::Uri { .. } => Err(ImageLoadError::BufferLoadError(
