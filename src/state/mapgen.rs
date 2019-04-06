@@ -1,8 +1,8 @@
 use std::f32::consts::PI;
 use std::rc::Rc;
 
-use nalgebra::{Isometry, Translation, UnitComplex, UnitQuaternion, Vector2, Vector3};
-use ncollide2d::shape::{Ball, Shape};
+use nalgebra::{Isometry, Point2, Translation, UnitComplex, UnitQuaternion, Vector2, Vector3};
+use ncollide2d::shape::{Ball, Polyline, Shape};
 use rand::distributions::{Distribution, Normal};
 use rand::{self, Rng};
 
@@ -52,6 +52,7 @@ where
     pub height: f32,
     pub num_players: usize,
     pub game_renderer: Rc<GameRenderer<Context = Context>>,
+    pub ship_mesh: &'a Mesh<Context>,
     pub make_ship_renderer: Box<Fn(&Player) -> Result<Rc<EntityRenderer>, ()>>,
 }
 
@@ -128,7 +129,8 @@ where
             .make_player_ship_renderers()
             .map_err(|_| MapgenError::CouldNotCreateShipRenderers)?;
         for (id, _player) in self.game_state.players.iter().enumerate() {
-            let shape = Box::new(Ball::new(0.5)); // TODO: make better collision shapes for ships.
+            let mesh_shape = make_collision_shape(self.ship_mesh);
+            let shape = mesh_shape.unwrap_or_else(|| Box::new(Ball::new(0.5)));
             let mut ship = self.place_entity(shape)?;
             ship.ship = Some(Ship { player_id: id });
             ship.transform.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
@@ -191,4 +193,20 @@ where
         }
     }
     Rc::new(MeshRenderer::new(renderer, new_mesh))
+}
+
+fn make_collision_shape<Context: RenderingContext>(
+    mesh: &Mesh<Context>,
+) -> Option<Box<dyn Shape<f32>>> {
+    let extras = mesh.extras.as_ref()?;
+    let collision = extras.get("collision_shape")?.as_array()?;
+    let mut points: Vec<Point2<f32>> = Vec::new();
+    points.reserve(collision.len() / 2);
+    let mut iter = collision.iter();
+    while let Some(next_val) = iter.next() {
+        let x = next_val.as_f64()? as f32;
+        let y = iter.next()?.as_f64()? as f32;
+        points.push(Point2::new(x, y));
+    }
+    Some(Box::new(Polyline::new(points, None)))
 }

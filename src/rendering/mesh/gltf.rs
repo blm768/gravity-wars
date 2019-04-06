@@ -122,7 +122,9 @@ where
             .primitives()
             .map(|ref p| self.load_primitive(p))
             .collect();
-        Ok(Mesh::new(primitives?))
+        let mut new_mesh = Mesh::new(primitives?);
+        new_mesh.extras = mesh.extras().as_ref().cloned();
+        Ok(new_mesh)
     }
 
     pub fn load_primitive(

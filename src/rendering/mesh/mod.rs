@@ -10,11 +10,12 @@ pub mod gltf;
 #[derive(Debug)]
 pub struct Mesh<Context: RenderingContext> {
     pub primitives: Vec<Primitive<Context>>,
+    pub extras: Option<serde_json::Value>,
 }
 
 impl<Context: RenderingContext> Mesh<Context> {
     pub fn new(primitives: Vec<Primitive<Context>>) -> Self {
-        Mesh { primitives }
+        Mesh { primitives, extras: None }
     }
 
     pub fn draw(&self, shader: &BoundMaterialShader<Context>) {

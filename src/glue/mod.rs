@@ -163,15 +163,18 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         .meshes()
         .next()
         .ok_or_else(|| String::from("Unable to find mesh"))?;
-    let ship_mesh = loader
-        .load_mesh(&first_mesh)
-        .map_err(|e| format!("Unable to load mesh: {:?}", e))?;
+    let ship_mesh = Rc::new(
+        loader
+            .load_mesh(&first_mesh)
+            .map_err(|e| format!("Unable to load mesh: {:?}", e))?,
+    );
 
     let renderer_clone = Rc::clone(&renderer);
+    let ship_mesh_clone = Rc::clone(&ship_mesh);
     let make_ship_renderer = move |player: &Player| {
         Ok(mapgen::make_ship_mesh_renderer(
             Rc::clone(&renderer_clone) as Rc<GameRenderer<Context = WebGlContext>>,
-            &ship_mesh,
+            &ship_mesh_clone,
             &player.color,
         ))
     };
@@ -181,6 +184,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         height: DEFAULT_MAP_HEIGHT,
         num_players: 2,
         game_renderer: Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
+        ship_mesh: &ship_mesh,
         make_ship_renderer: Box::new(make_ship_renderer),
     };
     mapgen_params
