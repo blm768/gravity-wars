@@ -1,6 +1,7 @@
 /dist/
 /node_modules/
 /target/
+/snippets/
 /gravity_wars_bg.d.ts
 /gravity_wars_bg.wasm
 /gravity_wars.d.ts

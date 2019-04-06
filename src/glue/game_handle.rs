@@ -121,11 +121,19 @@ impl GameHandle {
     }
 }
 
-#[wasm_bindgen(raw_module = "./glue")]
+#[wasm_bindgen(module = "/src/glue/game_interface.js")]
 extern "C" {
     /// Handle to the game's UI controls
     pub type GameInterface;
 
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> GameInterface;
+
     #[wasm_bindgen(method, js_name = "updateUI")]
     pub fn update_ui(interface: &GameInterface);
+}
+
+#[wasm_bindgen(js_name="initInterface")]
+pub fn init_interface() -> GameInterface {
+    GameInterface::new()
 }

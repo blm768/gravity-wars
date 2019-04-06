@@ -3,7 +3,7 @@ const CAMERA_ZOOM_RATE = 0.1;
 // The event code for the primary (usually left) mouse button
 const PRIMARY_BUTTON = 1;
 
-export class GameInterface {
+class GameControls {
     constructor() {
         let controlForm = document.getElementById('game_controls');
         this.controlForm = controlForm;
@@ -13,18 +13,44 @@ export class GameInterface {
         this.playerIndicator = controlForm.querySelector("#current_player");
     }
 
+    enable(doEnable) {
+        this.angleInput.disabled = !doEnable;
+        this.powerInput.disabled = !doEnable;
+        this.fireButton.disabled = !doEnable;
+    }
+}
+
+export class GameInterface {
+    constructor() {
+        if (document.readyState == "loading") {
+            document.addEventListener('DOMContentLoaded', () => this.onControlsReady());
+        } else {
+            this.onControlsReady();
+        }
+    }
+
     onGameReady(game) {
         if (this.gameHandle) {
             return;
         }
-
         this.gameHandle = game;
-        this.initControls();
-        this.gameHandle.onInterfaceReady(this);
+        this.connectGameEvents();
     }
 
-    initControls() {
-        this.controlForm.addEventListener('submit', () => { this.sendFireEvent(); });
+    onControlsReady() {
+        if (this.controls) {
+            return;
+        }
+        this.controls = new GameControls;
+        this.connectGameEvents();
+    }
+
+    connectGameEvents() {
+        if (!(this.gameHandle && this.controls)) {
+            return;
+        }
+
+        this.controls.controlForm.addEventListener('submit', () => { this.sendFireEvent(); });
 
         let canvas = this.gameHandle.canvas();
         canvas.addEventListener('mousemove', (event) => {
@@ -35,30 +61,25 @@ export class GameInterface {
         canvas.addEventListener('wheel', (event) => {
             this.gameHandle.onZoom(event.deltaY * CAMERA_ZOOM_RATE);
         });
+        this.gameHandle.onInterfaceReady(this);
     }
 
     sendFireEvent() {
-        let angle = parseFloat(this.angleInput.value) * Math.PI / 180.0;
-        let power = parseFloat(this.powerInput.value);
+        let angle = parseFloat(this.controls.angleInput.value) * Math.PI / 180.0;
+        let power = parseFloat(this.controls.powerInput.value);
 
         this.gameHandle.onFire(angle, power);
     }
 
-    enableControls(doEnable) {
-        this.angleInput.disabled = !doEnable;
-        this.powerInput.disabled = !doEnable;
-        this.fireButton.disabled = !doEnable;
-    }
-
     updateUI() {
-        this.enableControls(!this.gameHandle.hasActiveMissiles());
+        this.controls.enable(!this.gameHandle.hasActiveMissiles());
         var currentPlayer = this.gameHandle.currentPlayer();
         if (currentPlayer !== null) {
-            this.playerIndicator.textContent = "Player " + (currentPlayer + 1);
+            this.controls.playerIndicator.textContent = "Player " + (currentPlayer + 1);
         }
         var color = this.gameHandle.currentPlayerColor();
         if (color !== null) {
-            this.playerIndicator.style.setProperty("--player-color", "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")");
+            this.controls.playerIndicator.style.setProperty("--player-color", "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")");
         }
     }
 }
