@@ -51,9 +51,9 @@ where
     pub width: f32,
     pub height: f32,
     pub num_players: usize,
-    pub game_renderer: Rc<GameRenderer<Context = Context>>,
+    pub game_renderer: Rc<dyn GameRenderer<Context = Context>>,
     pub ship_mesh: &'a Mesh<Context>,
-    pub make_ship_renderer: Box<Fn(&Player) -> Result<Rc<EntityRenderer>, ()>>,
+    pub make_ship_renderer: Box<dyn Fn(&Player) -> Result<Rc<dyn EntityRenderer>, ()>>,
 }
 
 impl<'a, Context> MapgenParams<'a, Context>
@@ -140,7 +140,7 @@ where
         Ok(())
     }
 
-    fn make_player_ship_renderers(&mut self) -> Result<Vec<Rc<EntityRenderer>>, ()> {
+    fn make_player_ship_renderers(&mut self) -> Result<Vec<Rc<dyn EntityRenderer>>, ()> {
         let players = &self.game_state.players;
         let mut renderers = Vec::with_capacity(players.len());
         for player in players.iter() {
@@ -175,10 +175,10 @@ where
 }
 
 pub fn make_ship_mesh_renderer<Context>(
-    renderer: Rc<GameRenderer<Context = Context>>,
+    renderer: Rc<dyn GameRenderer<Context = Context>>,
     mesh: &Mesh<Context>,
     color: &Rgb,
-) -> Rc<EntityRenderer>
+) -> Rc<dyn EntityRenderer>
 where
     Context: RenderingContext + 'static,
 {

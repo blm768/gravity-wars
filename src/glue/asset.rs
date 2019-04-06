@@ -167,8 +167,9 @@ fn error_to_message(error: JsValue) -> Option<String> {
     match error.dyn_into::<js_sys::Error>() {
         Ok(error) => Some(error.message().into()),
         Err(obj) => obj
-            .dyn_into::<js_sys::Object>().ok()
-            .map(|o| o.to_string().into())
+            .dyn_into::<js_sys::Object>()
+            .ok()
+            .map(|o| o.to_string().into()),
     }
 }
 
@@ -188,7 +189,10 @@ fn do_fetch(uri: &str) -> impl Future<Item = Vec<u8>, Error = FetchError> {
                 Err(FetchError::from_http_status(response.status()))
             }
         })
-        .and_then(|promise| JsFuture::from(promise).map_err(|e| FetchError::new(FetchErrorType::Interrupted, error_to_message(e))))
+        .and_then(|promise| {
+            JsFuture::from(promise)
+                .map_err(|e| FetchError::new(FetchErrorType::Interrupted, error_to_message(e)))
+        })
         .and_then(|obj| {
             let array = obj
                 .dyn_into::<ArrayBuffer>()

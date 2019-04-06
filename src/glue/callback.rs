@@ -12,7 +12,7 @@ pub trait Callback {
 }
 
 pub struct AnimationFrameCallback {
-    closure: Closure<Fn(f64)>,
+    closure: Closure<dyn Fn(f64)>,
     callback_handle: Rc<Cell<Option<i32>>>,
 }
 
@@ -20,12 +20,12 @@ impl AnimationFrameCallback {
     pub fn new<F: Fn(f64) + 'static>(callback: F) -> AnimationFrameCallback {
         // We'll need to wrap the provided callback in a self-referential "loop" closure that runs the callback and then invokes requestAnimationFrame on itself.
         // To start, we'll need some shared storage to hold the self-referential closure. We can't fill it in yet because of the circular reference.
-        type Callback = Box<Fn(f64)>;
+        type Callback = Box<dyn Fn(f64)>;
         let shared_loop: Rc<RefCell<Option<Callback>>> = Rc::new(RefCell::new(None));
 
         // Adapt a copy of shared_loop so it can be passed as a JS function to requestAnimationFrame.
         let weak_loop = Rc::downgrade(&shared_loop); // Prevents a reference loop.
-        let loop_closure: Closure<Fn(f64)> = Closure::new(move |milliseconds: f64| {
+        let loop_closure: Closure<dyn Fn(f64)> = Closure::new(move |milliseconds: f64| {
             if let Some(strong) = weak_loop.upgrade() {
                 if let Some(loop_func) = strong.borrow().as_ref() {
                     loop_func(milliseconds);
@@ -48,7 +48,7 @@ impl AnimationFrameCallback {
         };
         *shared_loop.borrow_mut() = Some(Box::new(callback_loop));
 
-        let outer_closure: Closure<Fn(f64)> = Closure::new(move |milliseconds: f64| {
+        let outer_closure: Closure<dyn Fn(f64)> = Closure::new(move |milliseconds: f64| {
             if let Some(loop_func) = shared_loop.borrow().as_ref() {
                 loop_func(milliseconds);
             }
@@ -96,7 +96,7 @@ impl Drop for AnimationFrameCallback {
 }
 
 pub struct IntervalCallback {
-    closure: Closure<Fn()>,
+    closure: Closure<dyn Fn()>,
     milliseconds: i32,
     callback_handle: Option<i32>,
 }

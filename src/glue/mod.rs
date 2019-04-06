@@ -146,11 +146,11 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     ));
     renderer.configure_context();
 
-    let renderer_clone = Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>;
+    let renderer_clone = Rc::clone(&renderer) as Rc<dyn GameRenderer<Context = WebGlContext>>;
     let make_missile_trail = move || {
         Some(Rc::new(
             MissileTrailRenderer::new(Rc::clone(&renderer_clone), Rgb::new(1.0, 1.0, 1.0)).ok()?,
-        ) as Rc<EntityRenderer>)
+        ) as Rc<dyn EntityRenderer>)
     };
     let mut state = GameState::new(Box::new(make_missile_trail));
 
@@ -173,7 +173,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     let ship_mesh_clone = Rc::clone(&ship_mesh);
     let make_ship_renderer = move |player: &Player| {
         Ok(mapgen::make_ship_mesh_renderer(
-            Rc::clone(&renderer_clone) as Rc<GameRenderer<Context = WebGlContext>>,
+            Rc::clone(&renderer_clone) as Rc<dyn GameRenderer<Context = WebGlContext>>,
             &ship_mesh_clone,
             &player.color,
         ))
@@ -183,7 +183,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         width: DEFAULT_MAP_WIDTH,
         height: DEFAULT_MAP_HEIGHT,
         num_players: 2,
-        game_renderer: Rc::clone(&renderer) as Rc<GameRenderer<Context = WebGlContext>>,
+        game_renderer: Rc::clone(&renderer) as Rc<dyn GameRenderer<Context = WebGlContext>>,
         ship_mesh: &ship_mesh,
         make_ship_renderer: Box::new(make_ship_renderer),
     };

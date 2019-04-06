@@ -17,11 +17,11 @@ use crate::state::{Entity, EntityRenderer, GameState};
 #[derive(Debug)]
 pub struct MeshRenderer<Context: RenderingContext> {
     mesh: Mesh<Context>,
-    renderer: Rc<GameRenderer<Context = Context>>,
+    renderer: Rc<dyn GameRenderer<Context = Context>>,
 }
 
 impl<Context: RenderingContext> MeshRenderer<Context> {
-    pub fn new(renderer: Rc<GameRenderer<Context = Context>>, mesh: Mesh<Context>) -> Self {
+    pub fn new(renderer: Rc<dyn GameRenderer<Context = Context>>, mesh: Mesh<Context>) -> Self {
         MeshRenderer { mesh, renderer }
     }
 }
@@ -45,11 +45,11 @@ impl<Context: RenderingContext> EntityRenderer for MeshRenderer<Context> {
 pub struct MissileTrailRenderer<Context: RenderingContext> {
     line: RefCell<PolyLine<Context>>,
     data_version: Cell<usize>,
-    renderer: Rc<GameRenderer<Context = Context>>,
+    renderer: Rc<dyn GameRenderer<Context = Context>>,
 }
 
 impl<Context: RenderingContext> MissileTrailRenderer<Context> {
-    pub fn new(renderer: Rc<GameRenderer<Context = Context>>, color: Rgb) -> Result<Self, ()> {
+    pub fn new(renderer: Rc<dyn GameRenderer<Context = Context>>, color: Rgb) -> Result<Self, ()> {
         let line = PolyLine::new(renderer.context().make_attribute_buffer()?, color);
         Ok(MissileTrailRenderer {
             line: RefCell::new(line),
@@ -82,7 +82,7 @@ pub trait GameRenderer: Debug {
     fn context(&self) -> &Self::Context;
     fn material_shader(&self) -> &MaterialShader<Self::Context>;
     fn line_shader(&self) -> &LineShader<Self::Context>;
-    fn render(&self, state: &mut GameState) -> Result<(), Box<Error>>;
+    fn render(&self, state: &mut GameState) -> Result<(), Box<dyn Error>>;
 }
 
 impl MaterialWorldContext for GameState {

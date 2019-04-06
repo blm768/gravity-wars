@@ -13,7 +13,7 @@ pub struct LightShaderInfo {
 
 impl LightShaderInfo {
     pub fn from_program<Context: RenderingContext>(
-        program: &ShaderProgram<RenderingContext = Context>,
+        program: &dyn ShaderProgram<RenderingContext = Context>,
     ) -> LightShaderInfo {
         LightShaderInfo {
             sun: SunLightShaderInfo::from_program(program),
@@ -24,7 +24,7 @@ impl LightShaderInfo {
     pub fn bind_sun<Context: RenderingContext>(
         &self,
         sun: &SunLight,
-        shader: &BoundShader<Context>,
+        shader: &dyn BoundShader<Context>,
     ) {
         if let Some(ref sun_info) = self.sun {
             sun_info.bind_light(sun, shader)
@@ -34,7 +34,7 @@ impl LightShaderInfo {
     pub fn bind_ambient<Context: RenderingContext>(
         &self,
         ambient: &Rgb,
-        shader: &BoundShader<Context>,
+        shader: &dyn BoundShader<Context>,
     ) {
         if let Some(ref ambient_info) = self.ambient {
             shader.set_uniform_vec3(ambient_info.index, rendering::rgb_as_vec3(ambient));
@@ -55,7 +55,7 @@ pub struct PointLightShaderInfo {
 
 impl PointLightShaderInfo {
     pub fn from_program<Context: RenderingContext>(
-        program: &ShaderProgram<RenderingContext = Context>,
+        program: &dyn ShaderProgram<RenderingContext = Context>,
     ) -> Option<PointLightShaderInfo> {
         Some(PointLightShaderInfo {
             color: program.uniform("light.color")?,
@@ -66,7 +66,7 @@ impl PointLightShaderInfo {
     pub fn bind_light<Context: RenderingContext>(
         &self,
         light: &PointLight,
-        shader: &BoundShader<Context>,
+        shader: &dyn BoundShader<Context>,
     ) {
         shader.set_uniform_vec3(self.color.index, rendering::rgb_as_vec3(&light.color));
         shader.set_uniform_vec3(self.position.index, light.position);
@@ -86,7 +86,7 @@ pub struct SunLightShaderInfo {
 
 impl SunLightShaderInfo {
     pub fn from_program<Context: RenderingContext>(
-        program: &ShaderProgram<RenderingContext = Context>,
+        program: &dyn ShaderProgram<RenderingContext = Context>,
     ) -> Option<SunLightShaderInfo> {
         Some(SunLightShaderInfo {
             color: program.uniform("sun.color")?,
@@ -97,7 +97,7 @@ impl SunLightShaderInfo {
     pub fn bind_light<Context: RenderingContext>(
         &self,
         light: &SunLight,
-        shader: &BoundShader<Context>,
+        shader: &dyn BoundShader<Context>,
     ) {
         shader.set_uniform_vec3(self.color.index, rendering::rgb_as_vec3(&light.color));
         shader.set_uniform_vec3(self.direction.index, light.direction.into_inner());

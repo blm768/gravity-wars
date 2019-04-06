@@ -49,7 +49,7 @@ pub struct MaterialShaderInfo {
 
 impl MaterialShaderInfo {
     pub fn from_program<Context: RenderingContext>(
-        program: &ShaderProgram<RenderingContext = Context>,
+        program: &dyn ShaderProgram<RenderingContext = Context>,
     ) -> Result<MaterialShaderInfo, ShaderInfoError> {
         Ok(MaterialShaderInfo {
             position: ShaderParamInfo::attribute(program, "position")?,
@@ -67,7 +67,7 @@ impl MaterialShaderInfo {
     pub fn bind_material<Context: RenderingContext>(
         &self,
         material: &Material<Context>,
-        context: &BoundShader<Context>,
+        context: &dyn BoundShader<Context>,
     ) {
         if let Some(ref base_color) = self.base_color {
             context.set_uniform_vec4(
@@ -117,7 +117,7 @@ impl<Context: RenderingContext> BoundMaterialShader<Context> {
     pub fn new(
         context: &Context,
         shader: &MaterialShader<Context>,
-        world: &MaterialWorldContext,
+        world: &dyn MaterialWorldContext,
     ) -> Result<Self, ShaderBindError> {
         let bound_shader = context.bind_shader(Rc::clone(&shader.program))?;
         let info = &shader.info;
@@ -135,7 +135,7 @@ impl<Context: RenderingContext> BoundMaterialShader<Context> {
         &self.info
     }
 
-    pub fn bound_shader(&self) -> &BoundShader<Context> {
+    pub fn bound_shader(&self) -> &dyn BoundShader<Context> {
         &self.bound_shader
     }
 }
@@ -144,7 +144,7 @@ impl<Context> Deref for BoundMaterialShader<Context>
 where
     Context: RenderingContext,
 {
-    type Target = BoundShader<Context>;
+    type Target = dyn BoundShader<Context>;
     fn deref(&self) -> &Self::Target {
         &self.bound_shader
     }

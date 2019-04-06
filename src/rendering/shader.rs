@@ -18,7 +18,7 @@ pub struct ShaderParamInfo {
 
 impl ShaderParamInfo {
     pub fn attribute<Context: RenderingContext>(
-        shader: &ShaderProgram<RenderingContext = Context>,
+        shader: &dyn ShaderProgram<RenderingContext = Context>,
         name: &str,
     ) -> Result<ShaderParamInfo, ShaderInfoError> {
         shader
@@ -27,7 +27,7 @@ impl ShaderParamInfo {
     }
 
     pub fn uniform<Context: RenderingContext>(
-        shader: &ShaderProgram<RenderingContext = Context>,
+        shader: &dyn ShaderProgram<RenderingContext = Context>,
         name: &str,
     ) -> Result<ShaderParamInfo, ShaderInfoError> {
         shader

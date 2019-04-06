@@ -15,7 +15,10 @@ pub struct Mesh<Context: RenderingContext> {
 
 impl<Context: RenderingContext> Mesh<Context> {
     pub fn new(primitives: Vec<Primitive<Context>>) -> Self {
-        Mesh { primitives, extras: None }
+        Mesh {
+            primitives,
+            extras: None,
+        }
     }
 
     pub fn draw(&self, shader: &BoundMaterialShader<Context>) {
@@ -117,7 +120,7 @@ impl<Context: RenderingContext> ElementIndices<Context> {
     }
 
     pub fn from_data<E>(
-        data: &BufferData<E>,
+        data: &dyn BufferData<E>,
         context: &Context,
     ) -> Result<ElementIndices<Context>, ()>
     where

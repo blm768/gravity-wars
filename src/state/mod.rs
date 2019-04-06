@@ -34,7 +34,7 @@ pub struct Entity {
     pub transform: EntityTransform,
     pub mass: f32,
     pub collision_shape: Option<Box<dyn Shape<f32>>>,
-    pub renderer: Option<Rc<EntityRenderer>>,
+    pub renderer: Option<Rc<dyn EntityRenderer>>,
     pub missile_trail: Option<MissileTrail>,
     pub ship: Option<Ship>,
 }
@@ -180,7 +180,7 @@ pub struct WorldLight {
     pub ambient: Rgb,
 }
 
-pub type RendererFactory = Box<FnMut() -> Option<Rc<EntityRenderer>>>;
+pub type RendererFactory = Box<dyn FnMut() -> Option<Rc<dyn EntityRenderer>>>;
 
 pub struct GameState {
     pub entities: Vec<Entity>,

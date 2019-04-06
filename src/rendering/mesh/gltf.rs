@@ -171,7 +171,7 @@ where
         Ok(&data[view.offset()..view.offset() + view.length()])
     }
 
-    fn load_buffer(&self, gl_buf: &Buffer<RenderingContext = Context>, src_buf: &gltf::Buffer) {
+    fn load_buffer(&self, gl_buf: &dyn Buffer<RenderingContext = Context>, src_buf: &gltf::Buffer) {
         let blob = self.gltf.blob.as_ref();
         let data = match src_buf.source() {
             Source::Bin => blob.map(|vec| &vec[..]).unwrap_or(&[]),

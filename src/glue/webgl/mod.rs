@@ -127,9 +127,6 @@ impl RenderingContext for WebGlContext {
         }
 
         shader.bind();
-        Ok(WebGlBoundShader::new(
-            Rc::clone(&self.gl_context),
-            shader,
-        ))
+        Ok(WebGlBoundShader::new(Rc::clone(&self.gl_context), shader))
     }
 }

@@ -20,7 +20,7 @@ pub struct GameHandle {
     renderer: Rc<WebGlRenderer>,
     input_queue: Rc<RefCell<VecDeque<InputEvent>>>,
     interface: Rc<RefCell<Option<GameInterface>>>,
-    callbacks: Vec<Box<Callback>>,
+    callbacks: Vec<Box<dyn Callback>>,
 }
 
 impl GameHandle {
@@ -47,7 +47,7 @@ impl GameHandle {
     }
 
     /// Adds a callback to the internal list so it won't get dropped while the handle exists
-    pub fn add_callback(&mut self, callback: Box<Callback>) {
+    pub fn add_callback(&mut self, callback: Box<dyn Callback>) {
         self.callbacks.push(callback);
     }
 }

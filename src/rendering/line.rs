@@ -66,7 +66,7 @@ impl LineShaderInfo {
         })
     }
 
-    pub fn bind_color<Context>(&self, color: &Rgb, context: &BoundShader<Context>)
+    pub fn bind_color<Context>(&self, color: &Rgb, context: &dyn BoundShader<Context>)
     where
         Context: RenderingContext,
     {
@@ -104,7 +104,7 @@ impl<Context: RenderingContext> BoundLineShader<Context> {
     pub fn new(
         context: &Context,
         shader: &LineShader<Context>,
-        world: &LineWorldContext,
+        world: &dyn LineWorldContext,
     ) -> Result<Self, ShaderBindError> {
         let bound_shader = context.bind_shader(Rc::clone(&shader.program))?;
         bound_shader.set_uniform_mat4(shader.info.projection.index, world.projection());
@@ -119,7 +119,7 @@ impl<Context: RenderingContext> BoundLineShader<Context> {
         &self.info
     }
 
-    pub fn bound_shader(&self) -> &BoundShader<Context> {
+    pub fn bound_shader(&self) -> &dyn BoundShader<Context> {
         &self.bound_shader
     }
 }
@@ -128,7 +128,7 @@ impl<Context> Deref for BoundLineShader<Context>
 where
     Context: RenderingContext,
 {
-    type Target = BoundShader<Context>;
+    type Target = dyn BoundShader<Context>;
     fn deref(&self) -> &Self::Target {
         &self.bound_shader
     }

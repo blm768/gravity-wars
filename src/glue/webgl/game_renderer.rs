@@ -60,7 +60,7 @@ impl GameRenderer for WebGlRenderer {
         &self.line_shader
     }
 
-    fn render(&self, state: &mut GameState) -> Result<(), Box<Error>> {
+    fn render(&self, state: &mut GameState) -> Result<(), Box<dyn Error>> {
         self.context.set_viewport();
         state.camera.aspect_ratio = self.context.aspect_ratio();
         self.gl_context().clear_color(0.0, 0.0, 0.0, 1.0);
