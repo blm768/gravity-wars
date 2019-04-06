@@ -6,30 +6,19 @@ use std::fmt::Display;
 use std::mem;
 use std::rc::Rc;
 
-use js_sys::Function;
+use futures::Future;
+use js_sys::{ArrayBuffer, Function, Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen]
-extern "C" {
-    pub type Response;
-    #[wasm_bindgen(method, getter)]
-    pub fn status(response: &Response) -> u32;
-}
-
-#[wasm_bindgen(raw_module = "./glue.js")]
-extern "C" {
-    #[wasm_bindgen(js_name=fetchAsset)]
-    fn fetch_asset(uri: &str, callback: &FetchCallback);
-}
-
-pub type FetchCallback = Closure<FnMut(WasmFetchResult)>;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::JsFuture;
+use web_sys::Response;
 
 #[derive(Clone, Debug)]
 pub enum FetchErrorType {
     NotFound,
     NetworkError,
     Interrupted,
-    HttpError(u32),
+    HttpError(u16),
     Other,
 }
 
@@ -37,6 +26,35 @@ pub enum FetchErrorType {
 pub struct FetchError {
     err_type: FetchErrorType,
     message: Option<String>,
+}
+
+impl FetchError {
+    pub fn new(err_type: FetchErrorType, message: Option<String>) -> FetchError {
+        FetchError { err_type, message }
+    }
+
+    pub fn from_http_status(status: u16) -> FetchError {
+        if status == 404 {
+            FetchError::new(FetchErrorType::NotFound, None)
+        } else {
+            FetchError::new(FetchErrorType::HttpError(status), None)
+        }
+    }
+
+    pub fn not_found() -> FetchError {
+        FetchError {
+            err_type: FetchErrorType::NotFound,
+            message: None,
+        }
+    }
+
+    // TODO: remove?
+    pub fn other() -> FetchError {
+        FetchError {
+            err_type: FetchErrorType::Other,
+            message: None,
+        }
+    }
 }
 
 impl Display for FetchError {
@@ -55,56 +73,10 @@ impl Display for FetchError {
     }
 }
 
-impl FetchError {
-    pub fn new(err_type: FetchErrorType, message: Option<String>) -> FetchError {
-        FetchError { err_type, message }
-    }
-
-    pub fn not_found() -> FetchError {
-        FetchError {
-            err_type: FetchErrorType::NotFound,
-            message: None,
-        }
-    }
-}
-
 pub type FetchResult = Result<Vec<u8>, FetchError>;
 
-#[wasm_bindgen]
-pub struct WasmFetchResult(pub FetchResult);
-
-#[wasm_bindgen]
-impl WasmFetchResult {
-    pub fn ok(data: Vec<u8>) -> WasmFetchResult {
-        WasmFetchResult(Ok(data))
-    }
-
-    pub fn net_error(err: String) -> WasmFetchResult {
-        WasmFetchResult(Err(FetchError::new(
-            FetchErrorType::NetworkError,
-            Some(err),
-        )))
-    }
-
-    pub fn http_error(response: &Response) -> WasmFetchResult {
-        let status_code = response.status();
-        if status_code == 404 {
-            WasmFetchResult(Err(FetchError::new(FetchErrorType::NotFound, None)))
-        } else {
-            WasmFetchResult(Err(FetchError::new(
-                FetchErrorType::HttpError(response.status()),
-                None,
-            )))
-        }
-    }
-
-    pub fn interrupted(err: String) -> WasmFetchResult {
-        WasmFetchResult(Err(FetchError::new(FetchErrorType::Interrupted, Some(err))))
-    }
-}
-
 struct AssetLoaderData {
-    pending: HashMap<Box<str>, FetchCallback>,
+    pending: HashMap<Box<str>, Promise>,
     resolved: HashMap<Box<str>, FetchResult>,
     on_complete: Option<Function>,
 }
@@ -134,15 +106,15 @@ impl AssetLoaderData {
     fn load(loader: &Rc<RefCell<AssetLoaderData>>, uri: &str) {
         let saved_uri: Box<str> = uri.into();
         let saved_loader = Rc::clone(&loader);
-        let callback = Closure::new(move |result: WasmFetchResult| {
+        let future = do_fetch(uri).then(move |result| {
             let mut borrowed = saved_loader.borrow_mut();
-            // Without the clone, we seem to get a corrupted string. This is probably a Rust or wasm_bindgen bug.
-            let WasmFetchResult(unwrapped) = result;
-            borrowed.process_response(&saved_uri.clone(), unwrapped);
+            borrowed.process_response(&saved_uri, result);
+            Ok(JsValue::null())
         });
         let mut borrowed = loader.borrow_mut();
-        fetch_asset(uri, &callback);
-        borrowed.pending.insert(uri.into(), callback);
+        borrowed
+            .pending
+            .insert(uri.into(), wasm_bindgen_futures::future_to_promise(future));
     }
 }
 
@@ -189,4 +161,42 @@ impl AssetData {
             None => Err(FetchError::not_found()),
         }
     }
+}
+
+fn error_to_message(error: JsValue) -> Option<String> {
+    match error.dyn_into::<js_sys::Error>() {
+        Ok(error) => Some(error.message().into()),
+        Err(obj) => obj
+            .dyn_into::<js_sys::Object>().ok()
+            .map(|o| o.to_string().into())
+    }
+}
+
+fn to_other_error(error: JsValue) -> FetchError {
+    FetchError::new(FetchErrorType::Other, error_to_message(error))
+}
+
+fn do_fetch(uri: &str) -> impl Future<Item = Vec<u8>, Error = FetchError> {
+    let promise = web_sys::window().unwrap().fetch_with_str(uri);
+    JsFuture::from(promise)
+        .map_err(|e| FetchError::new(FetchErrorType::NetworkError, error_to_message(e)))
+        .and_then(move |response| {
+            let response = response.dyn_into::<Response>().map_err(to_other_error)?;
+            if response.ok() {
+                Ok(response.array_buffer().map_err(to_other_error)?)
+            } else {
+                Err(FetchError::from_http_status(response.status()))
+            }
+        })
+        .and_then(|promise| JsFuture::from(promise).map_err(|e| FetchError::new(FetchErrorType::Interrupted, error_to_message(e))))
+        .and_then(|obj| {
+            let array = obj
+                .dyn_into::<ArrayBuffer>()
+                .map_err(to_other_error)
+                .map(|buf| Uint8Array::new(&buf))?;
+            let mut data = Vec::new();
+            data.resize(array.length() as usize, 0);
+            array.copy_to(&mut data[..]);
+            Ok(data)
+        })
 }

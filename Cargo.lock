@@ -241,6 +241,11 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "futures"
+version = "0.1.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "generic-array"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -296,6 +301,7 @@ name = "gravity-wars"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.1.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "gltf 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "js-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -306,6 +312,7 @@ dependencies = [
  "rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-futures 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -969,6 +976,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-bindgen-futures"
+version = "0.3.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "futures 0.1.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "wasm-bindgen-macro"
 version = "0.2.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1098,6 +1115,7 @@ dependencies = [
 "checksum failure_derive 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "ea1063915fd7ef4309e222a5a07cf9c319fb9c7836b1f89b85458672dbb127e1"
 "checksum fixedbitset 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "86d4de0081402f5e88cdac65c8dcdcc73118c1a7a465e2a05f0da05843a8ea33"
 "checksum fuchsia-cprng 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
+"checksum futures 0.1.26 (registry+https://github.com/rust-lang/crates.io-index)" = "62941eff9507c8177d448bd83a44d9b9760856e184081d8cd79ba9f03dd24981"
 "checksum generic-array 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3c0f28c2f5bfb5960175af447a2da7c18900693738343dc896ffbcabd9839592"
 "checksum gif 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dd4bca55ac1f213920ce3527ccd62386f1f15fa3f1714aeee1cf93f2c416903f"
 "checksum gltf 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)" = "24e185762327714d77d847345e14823dcae29bab47d72c4586f66a6602eddc2a"
@@ -1187,6 +1205,7 @@ dependencies = [
 "checksum version_check 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "914b1a6776c4c929a602fafd8bc742e06365d4bcbe48c30f9cca5824f70dc9dd"
 "checksum wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "9742fc4860f47bede1090a5e4b0cfc33afcd70cfdf45dd28f2cfb02d4662b0dd"
 "checksum wasm-bindgen-backend 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "c6d7f35ecbb4180513cdb9b298543321bcb278670730415cbb3205ff2c66a477"
+"checksum wasm-bindgen-futures 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)" = "67bfbec85e48e8915b6acfa1c4d90b770ce033c96dc2067688f3bccd00d3b9e1"
 "checksum wasm-bindgen-macro 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "e3c86b06bcd28e92e87d2c2ad208889b2f69ea33f79810b91ef660cc3de65a4c"
 "checksum wasm-bindgen-macro-support 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "81d7338dd8c67e193d8ef18e5802dc03d8710456baa792c1c2e66847e57fd389"
 "checksum wasm-bindgen-shared 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "0d57c3b66f2f3e4d96b50f49b7b7e2f4cfcddc88b15744433c98c5c105b26672"
