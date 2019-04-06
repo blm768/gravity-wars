@@ -294,8 +294,17 @@ impl GameState {
                 positions: vec![*ship.position()],
                 data_version: 0,
             };
-            if let Some(collision) = trail.time_to_collision(ship, false) {
-                trail.positions[0] += trail.velocity * (collision + 0.01);
+            if let Some(ref shape) = ship.collision_shape {
+                let radius = shape.bounding_sphere(&ship.collision_transform()).radius();
+                // Make sure we've gotten past the ship's own collision shape. Convex shapes may have multiple intersections before achieving clearance.
+                while (trail.positions[0] - ship.position()).magnitude_squared() < radius * radius {
+                    if let Some(collision) = trail.time_to_collision(ship, false) {
+                        trail.positions[0] +=
+                            trail.velocity * collision + trail.velocity.normalize() * 0.01;
+                    } else {
+                        break;
+                    }
+                }
             }
 
             let mut entity = Entity::new(*ship.position());
