@@ -5,6 +5,8 @@ use std::panic;
 use std::rc::Rc;
 use std::str;
 
+use futures::Future;
+use js_sys::Promise;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys;
@@ -64,7 +66,7 @@ pub fn get_webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGlRenderingCon
 }
 
 #[wasm_bindgen]
-pub fn load_assets() -> AssetLoader {
+pub fn load_assets() -> Promise {
     let assets = AssetLoader::new();
     assets.load("shaders/vertex.glsl");
     assets.load("shaders/fragment.glsl");
@@ -72,7 +74,10 @@ pub fn load_assets() -> AssetLoader {
     assets.load("shaders/line_fragment.glsl");
     assets.load("assets/meshes/ship.glb");
 
-    assets
+    let js_future = assets
+        .map(|d| JsValue::from(d))
+        .map_err(|_| JsValue::null());
+    wasm_bindgen_futures::future_to_promise(js_future)
 }
 
 fn compile_shader_from_asset(
@@ -230,3 +235,6 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
 
     Ok(game_handle)
 }
+
+#[wasm_bindgen(start)]
+pub fn start() {}

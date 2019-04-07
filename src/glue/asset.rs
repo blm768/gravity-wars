@@ -6,7 +6,7 @@ use std::fmt::Display;
 use std::mem;
 use std::rc::Rc;
 
-use futures::Future;
+use futures::{Async, Future};
 use js_sys::{ArrayBuffer, Function, Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -75,10 +75,10 @@ impl Display for FetchError {
 
 pub type FetchResult = Result<Vec<u8>, FetchError>;
 
+#[derive(Debug)]
 struct AssetLoaderData {
     pending: HashMap<Box<str>, Promise>,
     resolved: HashMap<Box<str>, FetchResult>,
-    on_complete: Option<Function>,
 }
 
 impl AssetLoaderData {
@@ -86,21 +86,7 @@ impl AssetLoaderData {
         Rc::new(RefCell::new(AssetLoaderData {
             pending: HashMap::new(),
             resolved: HashMap::new(),
-            on_complete: None,
         }))
-    }
-
-    fn process_response(&mut self, uri: &str, result: FetchResult) {
-        self.pending.remove(uri);
-        self.resolved.insert(uri.into(), result);
-
-        if self.pending.is_empty() {
-            let data = AssetData(mem::replace(&mut self.resolved, HashMap::new()));
-            if let Some(ref callback) = self.on_complete {
-                let js_val = JsValue::from(data);
-                callback.call1(&JsValue::NULL, &js_val).ok(); // Ignore return value and/or exceptions
-            }
-        }
     }
 
     fn load(loader: &Rc<RefCell<AssetLoaderData>>, uri: &str) {
@@ -108,7 +94,8 @@ impl AssetLoaderData {
         let saved_loader = Rc::clone(&loader);
         let future = do_fetch(uri).then(move |result| {
             let mut borrowed = saved_loader.borrow_mut();
-            borrowed.process_response(&saved_uri, result);
+            borrowed.pending.remove(&saved_uri);
+            borrowed.resolved.insert(saved_uri, result);
             Ok(JsValue::null())
         });
         let mut borrowed = loader.borrow_mut();
@@ -118,12 +105,10 @@ impl AssetLoaderData {
     }
 }
 
-#[wasm_bindgen]
 pub struct AssetLoader {
     data: Rc<RefCell<AssetLoaderData>>,
 }
 
-#[wasm_bindgen]
 impl AssetLoader {
     pub fn new() -> AssetLoader {
         AssetLoader {
@@ -134,15 +119,33 @@ impl AssetLoader {
     pub fn load(&self, uri: &str) {
         AssetLoaderData::load(&self.data, uri);
     }
-
-    pub fn and_then(&self, callback: Function) {
-        self.data.borrow_mut().on_complete = Some(callback)
-    }
 }
 
 impl Default for AssetLoader {
     fn default() -> Self {
         AssetLoader::new()
+    }
+}
+
+impl Future for AssetLoader {
+    type Item = AssetData;
+    type Error = ();
+
+    fn poll(&mut self) -> Result<Async<AssetData>, ()> {
+        use crate::glue::log;
+        log(&format!("Polling {:?}", &self.data.borrow()));
+        let is_ready = {
+            let borrowed = self.data.borrow();
+            borrowed.pending.is_empty() && !borrowed.resolved.is_empty()
+        };
+        if is_ready {
+            log("Ready");
+            let data = mem::replace(&mut self.data.borrow_mut().resolved, HashMap::new());
+            Ok(Async::Ready(AssetData(data)))
+        } else {
+            log("Not ready");
+            Ok(Async::NotReady)
+        }
     }
 }
 
