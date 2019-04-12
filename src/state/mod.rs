@@ -336,7 +336,7 @@ impl GameState {
         if missile.time_to_live <= 0.0 {
             return;
         }
-        if let Some(last_pos) = missile.positions.last() {
+        if let Some(last_pos) = missile.positions.last().cloned() {
             missile.time_to_live -= TICK_INTERVAL;
             for other in others {
                 if let Some(toi) = missile.time_to_collision(other, true) {
@@ -346,7 +346,7 @@ impl GameState {
                         return;
                     }
                 }
-                missile.velocity += other.gravity_at(last_pos);
+                missile.velocity += other.gravity_at(&last_pos);
             }
             missile.add_position(last_pos + missile.velocity * TICK_INTERVAL);
         }

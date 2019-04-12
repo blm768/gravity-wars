@@ -1,5 +1,3 @@
-#![feature(custom_attribute)]
-#![feature(try_from)]
 #![warn(bare_trait_objects)]
 
 pub mod glue;
