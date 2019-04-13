@@ -15,4 +15,5 @@ cargo +nightly build "${cargo_opts[@]}"
 
 wasm-bindgen \
     "target/wasm32-unknown-unknown/${target_dir}/gravity_wars.wasm" \
+    --target web \
     --out-dir .

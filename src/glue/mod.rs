@@ -63,7 +63,7 @@ pub fn get_webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGlRenderingCon
         .map_err(|obj| obj.to_string().into())
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = "loadAssets")]
 pub fn load_assets() -> AssetLoader {
     let assets = AssetLoader::new();
     assets.load("shaders/vertex.glsl");
@@ -106,7 +106,7 @@ fn load_program_from_assets(
         .map_err(|e| format!("{}", e))
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = "startGame")]
 pub fn start_game(assets: &AssetData) -> JsValue {
     panic::set_hook(Box::new(console_error_panic_hook::hook)); // TODO: make this happen earlier.
     match try_start_game(assets) {

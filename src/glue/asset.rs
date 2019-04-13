@@ -135,6 +135,7 @@ impl AssetLoader {
         AssetLoaderData::load(&self.data, uri);
     }
 
+    #[wasm_bindgen(js_name = "then")]
     pub fn and_then(&self, callback: Function) {
         self.data.borrow_mut().on_complete = Some(callback)
     }
