@@ -25,6 +25,7 @@ use crate::rendering::material::MaterialShader;
 use crate::rendering::mesh::gltf::GltfLoader;
 use crate::rendering::shader::ShaderType;
 use crate::rendering::Rgb;
+use crate::state::constants::TICK_INTERVAL;
 use crate::state::mapgen::{self, MapgenParams};
 use crate::state::{EntityRenderer, GameState, Player};
 use crate::state_renderer::{GameRenderer, MissileTrailRenderer};
@@ -223,7 +224,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     game_handle.add_callback(render_callback);
     let mut update_callback = Box::new(IntervalCallback::new(
         update_game,
-        (crate::state::TICK_INTERVAL * 1000.0) as i32,
+        (TICK_INTERVAL * 1000.0) as i32,
     ));
     update_callback.start()?;
     game_handle.add_callback(update_callback);

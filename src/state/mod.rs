@@ -1,175 +1,20 @@
-use std::fmt::Debug;
 use std::rc::Rc;
 
-use nalgebra::base::dimension::{U2, U3};
-use nalgebra::{Isometry, Similarity, Translation, Unit, UnitComplex, UnitQuaternion, Vector3};
-use ncollide2d::query::{Proximity, Ray, RayCast};
-use ncollide2d::shape::Shape;
-use num_complex::Complex;
+use nalgebra::{Unit, Vector3};
+use ncollide2d::query::Ray;
 
 use crate::rendering::light::SunLight;
 use crate::rendering::scene::Camera;
 use crate::rendering::Rgb;
+use crate::state::constants::*;
 use crate::state::event::{InputEvent, InputEventError, MissileParams};
 
+pub use crate::state::entity::*;
+
+pub mod constants;
+pub mod entity;
 pub mod event;
 pub mod mapgen;
-
-/// Game state ticks per second
-pub const TICKS_PER_SECOND: u32 = 30;
-/// Game state tick interval (in seconds)
-pub const TICK_INTERVAL: f32 = 1.0 / (TICKS_PER_SECOND as f32);
-
-/// Maximum time to live (in seconds)
-pub const MISSILE_TIME_TO_LIVE: f32 = 30.0;
-/// Maximum missile velocity (in arbitrary units)
-pub const MISSILE_MAX_VELOCITY: f32 = 10.0;
-/// Scaling factor from missile velocity units to actual game units per second
-pub const MISSILE_VELOCITY_SCALE: f32 = 10.0;
-
-/// Gravitational constant
-pub const GRAVITATIONAL_CONSTANT: f32 = 5e-10;
-
-pub struct Entity {
-    pub transform: EntityTransform,
-    pub mass: f32,
-    pub collision_shape: Option<Box<dyn Shape<f32>>>,
-    pub renderer: Option<Rc<dyn EntityRenderer>>,
-    pub missile_trail: Option<MissileTrail>,
-    pub ship: Option<Ship>,
-}
-
-impl Entity {
-    pub fn new(position: Vector3<f32>) -> Entity {
-        Entity {
-            transform: EntityTransform::at_position(position),
-            mass: 0.0,
-            collision_shape: None,
-            renderer: None,
-            missile_trail: None,
-            ship: None,
-        }
-    }
-
-    pub fn position(&self) -> &Vector3<f32> {
-        &self.transform.position
-    }
-
-    /// Returns the gravitational acceleration produced by this entity on a mass at pos
-    pub fn gravity_at(&self, pos: &Vector3<f32>) -> Vector3<f32> {
-        let difference = self.transform.position - pos;
-        let strength = difference.magnitude_squared() * self.mass * GRAVITATIONAL_CONSTANT;
-        difference.normalize() * strength
-    }
-
-    pub fn collides_with_shape(
-        &self,
-        other_shape: &dyn Shape<f32>,
-        other_transform: &Isometry<f32, U2, UnitComplex<f32>>,
-    ) -> bool {
-        use ncollide2d::query;
-        if let Some(shape) = &self.collision_shape {
-            let proximity = query::proximity(
-                &self.collision_transform(),
-                shape.as_ref(),
-                other_transform,
-                other_shape,
-                std::f32::EPSILON,
-            );
-            return match proximity {
-                Proximity::Disjoint => false,
-                _ => true,
-            };
-        }
-        false
-    }
-
-    /**
-     * Makes a rough mapping from the 3D transform to a 2D transform for collision detection.
-     */
-    fn collision_transform(&self) -> Isometry<f32, U2, UnitComplex<f32>> {
-        let rotated = self.transform.rotation * Vector3::new(1.0, 0.0, 0.0);
-        let flat_rotation = UnitComplex::from_complex(Complex::new(rotated.x, rotated.y));
-        Isometry::from_parts(Translation::from(self.position().xy()), flat_rotation)
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct EntityTransform {
-    pub position: Vector3<f32>,
-    pub rotation: UnitQuaternion<f32>,
-    pub scale: f32,
-}
-
-impl EntityTransform {
-    pub fn at_position(position: Vector3<f32>) -> EntityTransform {
-        EntityTransform {
-            position,
-            rotation: UnitQuaternion::identity(),
-            scale: 1.0,
-        }
-    }
-
-    pub fn to_similarity(&self) -> Similarity<f32, U3, UnitQuaternion<f32>> {
-        Similarity::from_parts(Translation::from(self.position), self.rotation, self.scale)
-    }
-}
-
-pub trait EntityRenderer: Debug {
-    fn render(&self, entity: &Entity, world: &GameState);
-}
-
-#[derive(Clone, Debug)]
-pub struct MissileTrail {
-    pub time_to_live: f32,
-    pub velocity: Vector3<f32>,
-    positions: Vec<Vector3<f32>>,
-    data_version: usize,
-}
-
-impl MissileTrail {
-    pub fn new(velocity: Vector3<f32>) -> MissileTrail {
-        MissileTrail {
-            time_to_live: MISSILE_TIME_TO_LIVE,
-            velocity,
-            positions: Vec::new(),
-            data_version: 0,
-        }
-    }
-
-    pub fn data_version(&self) -> usize {
-        self.data_version
-    }
-
-    pub fn positions(&self) -> &[Vector3<f32>] {
-        &self.positions
-    }
-
-    pub fn add_position(&mut self, position: Vector3<f32>) {
-        self.data_version += 1;
-        self.positions.push(position);
-    }
-
-    pub fn time_to_collision(&self, entity: &Entity, solid: bool) -> Option<f32> {
-        if let (Some(pos), Some(shape)) = (&self.positions.last(), &entity.collision_shape) {
-            let velocity = self.velocity.xy();
-            if velocity.magnitude_squared() > 0.0 {
-                let ray = Ray::new(pos.xy().into(), velocity.xy());
-                let transform = entity.collision_transform();
-                shape.toi_with_ray(&transform, &ray, solid)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Ship {
-    player_id: usize,
-}
 
 pub struct Player {
     pub color: Rgb,
@@ -287,25 +132,22 @@ impl GameState {
                 .get_ship()
                 .ok_or(InputEventError::NoShipToFireMissile)?;
             let speed = params.speed * MISSILE_VELOCITY_SCALE;
+            let mut position = *ship.position();
             let direction = Vector3::new(params.angle.cos(), params.angle.sin(), 0.0);
-            let mut trail = MissileTrail {
-                time_to_live: MISSILE_TIME_TO_LIVE,
-                velocity: speed * direction,
-                positions: vec![*ship.position()],
-                data_version: 0,
-            };
+            let velocity = speed * direction;
             if let Some(ref shape) = ship.collision_shape {
                 let radius = shape.bounding_sphere(&ship.collision_transform()).radius();
                 // Make sure we've gotten past the ship's own collision shape. Convex shapes may have multiple intersections before achieving clearance.
-                while (trail.positions[0] - ship.position()).magnitude_squared() < radius * radius {
-                    if let Some(collision) = trail.time_to_collision(ship, false) {
-                        trail.positions[0] +=
-                            trail.velocity * collision + trail.velocity.normalize() * 0.01;
+                while (position - ship.position()).magnitude_squared() < radius * radius {
+                    let ray = Ray::new(position.xy().into(), velocity.xy());
+                    if let Some(collision) = ship.ray_time_to_collision(&ray, false) {
+                        position += velocity * collision + direction * 0.01;
                     } else {
                         break;
                     }
                 }
             }
+            let trail = MissileTrail::new(position, velocity);
 
             let mut entity = Entity::new(*ship.position());
             entity.missile_trail = Some(trail);
@@ -325,7 +167,7 @@ impl GameState {
             let (entity, after) = after.split_first_mut().unwrap();
             if let Some(ref mut missile) = entity.missile_trail {
                 Self::update_missile(missile, before.iter().chain(after.iter()));
-                if let Some(new_pos) = missile.positions.last() {
+                if let Some(new_pos) = missile.positions().last() {
                     entity.transform.position = *new_pos;
                 }
             }
@@ -336,7 +178,7 @@ impl GameState {
         if missile.time_to_live <= 0.0 {
             return;
         }
-        if let Some(last_pos) = missile.positions.last().cloned() {
+        if let Some(last_pos) = missile.positions().last().cloned() {
             missile.time_to_live -= TICK_INTERVAL;
             for other in others {
                 if let Some(toi) = missile.time_to_collision(other, true) {
