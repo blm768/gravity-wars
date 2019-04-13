@@ -133,7 +133,7 @@ extern "C" {
     pub fn update_ui(interface: &GameInterface);
 }
 
-#[wasm_bindgen(js_name="initInterface")]
+#[wasm_bindgen(js_name = "initInterface")]
 pub fn init_interface() -> GameInterface {
     GameInterface::new()
 }
