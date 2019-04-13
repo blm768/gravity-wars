@@ -45,12 +45,14 @@ impl GameState {
             },
             ambient: Rgb::new(1.0, 1.0, 1.0) * 0.3,
         };
+        let mut camera = Camera::new();
+        camera.depth = mapgen::PLANET_RAD_MAX as f32;
 
         GameState {
             entities: Vec::new(),
             players: Box::from([]),
             current_player: None,
-            camera: Camera::new(),
+            camera,
             light,
             make_missile_renderer,
         }

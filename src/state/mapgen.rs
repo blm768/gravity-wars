@@ -25,6 +25,8 @@ const PLANET_RAD_MEAN: f64 = 12.0;
 const PLANET_RAD_STD_DEV: f64 = 5.0;
 // Minimum planet radius
 const PLANET_RAD_MIN: f64 = 0.1;
+// Maximum planet radius
+pub const PLANET_RAD_MAX: f64 = 1000.0;
 // Mean planet area
 const PLANET_AREA_MEAN: f64 = std::f64::consts::PI * PLANET_RAD_MEAN * PLANET_RAD_MEAN;
 // Mean number of planets per square unit of map space
@@ -105,7 +107,8 @@ where
         for _ in 0..num_planets {
             let radius = radius_distribution
                 .sample(&mut rand::thread_rng())
-                .max(PLANET_RAD_MIN) as f32;
+                .max(PLANET_RAD_MIN)
+                .min(PLANET_RAD_MAX) as f32;
             let shape = Box::new(Ball::new(radius));
             if let Ok(mut planet) = self.place_entity(shape) {
                 let density = density_distribution

@@ -6,6 +6,7 @@ pub struct Camera {
     pub rotation: UnitQuaternion<f32>,
     pub aspect_ratio: f32,
     pub log_scale: f32,
+    pub depth: f32,
 }
 
 impl Camera {
@@ -15,6 +16,7 @@ impl Camera {
             rotation: UnitQuaternion::identity(),
             aspect_ratio: 1.0,
             log_scale: 0.0,
+            depth: 1.0,
         }
     }
 
@@ -25,7 +27,8 @@ impl Camera {
     pub fn projection(&self) -> Orthographic3<f32> {
         let scale = self.scale();
         let right = scale * self.aspect_ratio;
-        Orthographic3::new(-right, right, -scale, scale, -scale, scale)
+        let depth = self.depth * 0.5;
+        Orthographic3::new(-right, right, -scale, scale, -depth, depth)
     }
 
     pub fn view(&self) -> Isometry<f32, U3, UnitQuaternion<f32>> {
