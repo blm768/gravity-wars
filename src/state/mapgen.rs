@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 use std::rc::Rc;
 
+use log::warn;
 use nalgebra::{Isometry, Point2, Translation, UnitComplex, UnitQuaternion, Vector2, Vector3};
 use ncollide2d::shape::{Ball, Polyline, Shape};
 use rand::distributions::{Distribution, Normal};
@@ -120,7 +121,7 @@ where
                 planet.renderer = Some(Rc::clone(&planet_renderer) as Rc<dyn EntityRenderer>);
                 self.game_state.entities.push(planet);
             } else {
-                crate::glue::log(&format!("Unable to place planet with radius {}", radius));
+                warn!("Unable to place planet with radius {}", radius);
             }
         }
 

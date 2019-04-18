@@ -5,6 +5,7 @@ use std::panic;
 use std::rc::Rc;
 use std::str;
 
+use log::error;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys;
@@ -38,11 +39,9 @@ pub mod webgl;
 const DEFAULT_MAP_WIDTH: f32 = 150.0;
 const DEFAULT_MAP_HEIGHT: f32 = 100.0;
 
-#[wasm_bindgen]
-extern "C" {
-    // TODO: just use web-sys?
-    #[wasm_bindgen(js_namespace=console)]
-    pub fn log(text: &str);
+#[wasm_bindgen(start)]
+pub fn do_init() {
+    console_log::init().expect("Failed to initialize logger");
 }
 
 pub fn get_canvas() -> Option<(Element, HtmlCanvasElement)> {
@@ -113,7 +112,7 @@ pub fn start_game(assets: &AssetData) -> JsValue {
     match try_start_game(assets) {
         Ok(handle) => JsValue::from(handle),
         Err(err) => {
-            log(&format!("Error starting game: {}", err));
+            error!("Error starting game: {}", err);
             JsValue::NULL
         }
     }
@@ -199,7 +198,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     let render_frame = move |_milliseconds: f64| {
         renderer
             .render(&mut render_state.borrow_mut())
-            .unwrap_or_else(|e| log(&e.to_string()));
+            .unwrap_or_else(|e| error!("{}", e.to_string()));
     };
 
     let update_state = Rc::clone(game_handle.game_state());
@@ -210,7 +209,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         let queue_len = queue.len();
         for event in queue.drain(0..queue_len) {
             if let Err(e) = update_state.borrow_mut().handle_input(&event) {
-                log(&e.to_string());
+                error!("{}", e.to_string());
             }
         }
         update_state.borrow_mut().update_missiles();
