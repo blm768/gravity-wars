@@ -190,7 +190,7 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
     mapgen_params
         .generate_map()
         .map_err(|e| format!("Unable to create map: {:?}", e))?;
-    state.next_player();
+    state.start_game();
 
     let mut game_handle = GameHandle::new(Rc::new(RefCell::new(state)), Rc::clone(&renderer));
 

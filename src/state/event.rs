@@ -8,6 +8,7 @@ pub enum InputEventError {
     NoShipToFireMissile,
     InvalidMissileAngle,
     InvalidMissileSpeed,
+    CannotFireNow,
 }
 
 impl Display for InputEventError {
@@ -19,6 +20,7 @@ impl Display for InputEventError {
                 InputEventError::NoShipToFireMissile => "No ship that can fire a missile",
                 InputEventError::InvalidMissileAngle => "Invalid angle for missile",
                 InputEventError::InvalidMissileSpeed => "Invalid speed for missile",
+                InputEventError::CannotFireNow => "Cannot fire a missile at this time",
             }
         )
     }

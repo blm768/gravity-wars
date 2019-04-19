@@ -6,6 +6,7 @@ use crate::state::entity::Entity;
 
 #[derive(Clone, Debug)]
 pub struct MissileTrail {
+    pub player_id: usize,
     pub time_to_live: f32,
     pub velocity: Vector3<f32>,
     positions: Vec<Vector3<f32>>,
@@ -13,8 +14,9 @@ pub struct MissileTrail {
 }
 
 impl MissileTrail {
-    pub fn new(position: Vector3<f32>, velocity: Vector3<f32>) -> MissileTrail {
+    pub fn new(player_id: usize, position: Vector3<f32>, velocity: Vector3<f32>) -> MissileTrail {
         MissileTrail {
+            player_id,
             time_to_live: constants::MISSILE_TIME_TO_LIVE,
             velocity,
             positions: vec![position],
@@ -46,10 +48,14 @@ impl MissileTrail {
         }
     }
 
-    pub fn update<'a>(&mut self, other_entities: &mut dyn Iterator<Item = &'a Entity>) {
+    pub fn update<'a>(
+        &mut self,
+        other_entities: &mut dyn Iterator<Item = &'a Entity>,
+    ) -> Option<MissileEvent<'a>> {
         if self.time_to_live <= 0.0 {
-            return;
+            return None;
         }
+
         if let Some(last_pos) = self.positions().last().cloned() {
             self.time_to_live -= constants::TICK_INTERVAL;
             for other in other_entities {
@@ -57,12 +63,18 @@ impl MissileTrail {
                     if toi <= constants::TICK_INTERVAL {
                         self.time_to_live = 0.0;
                         self.add_position(last_pos + self.velocity * toi);
-                        return;
+                        return Some(MissileEvent::HitEntity(other));
                     }
                 }
                 self.velocity += other.gravity_at(&last_pos);
             }
             self.add_position(last_pos + self.velocity * constants::TICK_INTERVAL);
+        }
+
+        if self.time_to_live <= 0.0 {
+            Some(MissileEvent::Expired)
+        } else {
+            None
         }
     }
 }

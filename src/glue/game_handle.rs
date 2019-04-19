@@ -9,7 +9,7 @@ use web_sys::HtmlCanvasElement;
 use crate::glue::callback::Callback;
 use crate::glue::webgl::game_renderer::WebGlRenderer;
 use crate::state::event::{InputEvent, MissileParams};
-use crate::state::GameState;
+use crate::state::{GameState, Turn, TurnState};
 
 /// Main interface between JavaScript and Rust
 ///
@@ -58,15 +58,15 @@ impl GameHandle {
         self.renderer.context().canvas().clone()
     }
 
-    #[wasm_bindgen(js_name = hasActiveMissiles)]
-    pub fn has_active_missiles(&self) -> bool {
-        self.game_state
-            .borrow()
-            .iter_entities()
-            .any(|e| match e.missile_trail {
-                Some(ref trail) => trail.time_to_live > 0.0,
-                None => false,
-            })
+    #[wasm_bindgen(js_name = isAiming)]
+    pub fn is_aiming(&self) -> bool {
+        match self.game_state.borrow().turn() {
+            Some(Turn {
+                state: TurnState::Aiming,
+                ..
+            }) => true,
+            _ => false,
+        }
     }
 
     #[wasm_bindgen(js_name = currentPlayer)]

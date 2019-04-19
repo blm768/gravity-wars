@@ -11,11 +11,13 @@ use crate::state::event::{InputEvent, InputEventError, MissileParams};
 
 pub use crate::state::entity::missile::MissileTrail;
 pub use crate::state::entity::*;
+pub use crate::state::turn::{Turn, TurnState};
 
 pub mod constants;
 pub mod entity;
 pub mod event;
 pub mod mapgen;
+pub mod turn;
 
 pub struct Player {
     pub color: Rgb,
@@ -31,7 +33,7 @@ pub type RendererFactory = Box<dyn FnMut() -> Option<Rc<dyn EntityRenderer>>>;
 pub struct GameState {
     pub entities: Vec<Entity>,
     players: Box<[Player]>,
-    current_player: Option<usize>,
+    turn: Option<Turn>,
     pub camera: Camera,
     pub light: WorldLight,
     pub make_missile_renderer: RendererFactory,
@@ -52,7 +54,7 @@ impl GameState {
         GameState {
             entities: Vec::new(),
             players: Box::from([]),
-            current_player: None,
+            turn: None,
             camera,
             light,
             make_missile_renderer,
@@ -64,13 +66,11 @@ impl GameState {
     }
 
     pub fn get_ship(&self) -> Option<&Entity> {
-        match self.current_player {
-            Some(id) => self.entities.iter().find(|ref e| match e.ship {
-                Some(ref ship) => ship.player_id == id,
-                None => false,
-            }),
-            None => None,
-        }
+        let id = self.turn?.current_player;
+        self.entities.iter().find(|ref e| match e.ship {
+            Some(ref ship) => ship.player_id == id,
+            None => false,
+        })
     }
 
     pub fn players(&self) -> &[Player] {
@@ -79,32 +79,26 @@ impl GameState {
 
     pub fn set_players(&mut self, players: Box<[Player]>) {
         self.players = players;
-        self.current_player = None;
+        self.turn = None;
+    }
+
+    pub fn turn(&self) -> Option<&Turn> {
+        self.turn.as_ref()
     }
 
     pub fn current_player(&self) -> Option<usize> {
-        self.current_player
+        Some(self.turn?.current_player)
     }
 
-    pub fn next_player(&mut self) {
-        if self.players.len() == 0 {
-            self.current_player = None;
-            return;
-        }
-
-        let next_player = match self.current_player {
-            Some(id) => (id + 1) % self.players.len(),
-            None => 0,
-        };
-
-        let skip_to_next = self
-            .entities
-            .iter()
-            .filter_map(|e| e.ship.as_ref())
-            .filter(|s| s.player_id < self.players.len())
-            .map(|s| (s.player_id + self.players.len() - next_player) % self.players.len())
-            .min();
-        self.current_player = skip_to_next.map(|s| next_player + s);
+    pub fn start_game(&mut self) {
+        self.turn = Turn::next_player(
+            &None,
+            self.players.len(),
+            &mut self
+                .entities
+                .iter()
+                .filter_map(|e| Some(e.ship.as_ref()?.player_id)),
+        );
     }
 
     pub fn handle_input(&mut self, event: &InputEvent) -> Result<(), InputEventError> {
@@ -123,6 +117,10 @@ impl GameState {
     }
 
     fn fire_missile(&mut self, params: MissileParams) -> Result<(), InputEventError> {
+        let turn = self.turn.ok_or(InputEventError::CannotFireNow)?;
+        if turn.state != TurnState::Aiming {
+            return Err(InputEventError::CannotFireNow);
+        }
         if !params.angle.is_finite() {
             return Err(InputEventError::InvalidMissileAngle);
         }
@@ -150,7 +148,7 @@ impl GameState {
                     }
                 }
             }
-            let trail = MissileTrail::new(position, velocity);
+            let trail = MissileTrail::new(turn.current_player, position, velocity);
 
             let mut entity = Entity::new(*ship.position());
             entity.missile_trail = Some(trail);
@@ -158,7 +156,7 @@ impl GameState {
             entity
         };
         self.entities.push(missile);
-        self.next_player();
+        self.turn.as_mut().unwrap().state = TurnState::Firing;
         Ok(())
     }
 
@@ -169,9 +167,17 @@ impl GameState {
             let (before, after) = entities.split_at_mut(i);
             let (entity, after) = after.split_first_mut().unwrap();
             if let Some(ref mut missile) = entity.missile_trail {
-                missile.update(&mut before.iter().chain(after.iter()));
+                let others = before.iter().chain(after.iter());
+                let event = missile.update(&mut others.clone());
                 if let Some(new_pos) = missile.positions().last() {
                     entity.transform.position = *new_pos;
+                }
+                if let Some(_) = event {
+                    self.turn = Turn::next_player(
+                        &self.turn,
+                        self.players.len(),
+                        &mut others.filter_map(|e| Some(e.ship.as_ref()?.player_id)),
+                    );
                 }
             }
         }

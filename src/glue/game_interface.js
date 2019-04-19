@@ -72,13 +72,13 @@ export class GameInterface {
     }
 
     updateUI() {
-        this.controls.enable(!this.gameHandle.hasActiveMissiles());
+        this.controls.enable(this.gameHandle.isAiming());
         var currentPlayer = this.gameHandle.currentPlayer();
-        if (currentPlayer !== null) {
+        if (currentPlayer !== undefined) {
             this.controls.playerIndicator.textContent = "Player " + (currentPlayer + 1);
         }
         var color = this.gameHandle.currentPlayerColor();
-        if (color !== null) {
+        if (color !== undefined) {
             this.controls.playerIndicator.style.setProperty("--player-color", "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")");
         }
     }
