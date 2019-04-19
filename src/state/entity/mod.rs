@@ -7,7 +7,9 @@ use ncollide2d::query::{Proximity, Ray, RayCast};
 use ncollide2d::shape::Shape;
 use num_complex::Complex;
 
+use crate::state::entity::missile::MissileTrail;
 use crate::state::{constants, GameState};
+pub mod missile;
 
 pub struct Entity {
     pub transform: EntityTransform,
@@ -70,7 +72,6 @@ impl Entity {
         shape.toi_with_ray(&transform, &ray, solid)
     }
 
-
     /**
      * Makes a rough mapping from the 3D transform to a 2D transform for collision detection.
      */
@@ -104,49 +105,6 @@ impl EntityTransform {
 
 pub trait EntityRenderer: Debug {
     fn render(&self, entity: &Entity, world: &GameState);
-}
-
-#[derive(Clone, Debug)]
-pub struct MissileTrail {
-    pub time_to_live: f32,
-    pub velocity: Vector3<f32>,
-    positions: Vec<Vector3<f32>>,
-    data_version: usize,
-}
-
-impl MissileTrail {
-    pub fn new(position: Vector3<f32>, velocity: Vector3<f32>) -> MissileTrail {
-        MissileTrail {
-            time_to_live: constants::MISSILE_TIME_TO_LIVE,
-            velocity,
-            positions: vec![position],
-            data_version: 0,
-        }
-    }
-
-    pub fn data_version(&self) -> usize {
-        self.data_version
-    }
-
-    pub fn positions(&self) -> &[Vector3<f32>] {
-        &self.positions
-    }
-
-    pub fn add_position(&mut self, position: Vector3<f32>) {
-        self.data_version += 1;
-        self.positions.push(position);
-    }
-
-    pub fn time_to_collision(&self, entity: &Entity, solid: bool) -> Option<f32> {
-        let pos = self.positions.last()?;
-        let velocity = self.velocity.xy();
-        if velocity.magnitude_squared() > 0.0 {
-            let ray = Ray::new(pos.xy().into(), velocity.xy());
-            entity.ray_time_to_collision(&ray, solid)
-        } else {
-            None
-        }
-    }
 }
 
 #[derive(Clone, Debug)]

@@ -9,6 +9,7 @@ use crate::rendering::Rgb;
 use crate::state::constants::*;
 use crate::state::event::{InputEvent, InputEventError, MissileParams};
 
+pub use crate::state::entity::missile::MissileTrail;
 pub use crate::state::entity::*;
 
 pub mod constants;
@@ -168,31 +169,11 @@ impl GameState {
             let (before, after) = entities.split_at_mut(i);
             let (entity, after) = after.split_first_mut().unwrap();
             if let Some(ref mut missile) = entity.missile_trail {
-                Self::update_missile(missile, before.iter().chain(after.iter()));
+                missile.update(&mut before.iter().chain(after.iter()));
                 if let Some(new_pos) = missile.positions().last() {
                     entity.transform.position = *new_pos;
                 }
             }
-        }
-    }
-
-    fn update_missile<'a, T: Iterator<Item = &'a Entity>>(missile: &mut MissileTrail, others: T) {
-        if missile.time_to_live <= 0.0 {
-            return;
-        }
-        if let Some(last_pos) = missile.positions().last().cloned() {
-            missile.time_to_live -= TICK_INTERVAL;
-            for other in others {
-                if let Some(toi) = missile.time_to_collision(other, true) {
-                    if toi <= TICK_INTERVAL {
-                        missile.time_to_live = 0.0;
-                        missile.add_position(last_pos + missile.velocity * toi);
-                        return;
-                    }
-                }
-                missile.velocity += other.gravity_at(&last_pos);
-            }
-            missile.add_position(last_pos + missile.velocity * TICK_INTERVAL);
         }
     }
 }
