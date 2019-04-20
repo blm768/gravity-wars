@@ -13,6 +13,7 @@ body {
         "map"
         "controls";
 
+    background: black;
     width: 100vw;
     height: 100vh;
 }
@@ -59,10 +60,12 @@ body {
     align-items: center;
 
     background-color: #555;
+    font-family: "Courier New", "Liberation Mono", monospace;
     font-size: 16pt;
 }
 
 #game_controls > * {
+    height: 100%;
     margin-right: 0.5em;
 }
 
@@ -75,6 +78,8 @@ body {
 }
 
 #game_controls label#current_player {
+    display: flex;
+    align-items: center;
     padding-right: 0.5em;
 }
 
@@ -90,8 +95,9 @@ body {
 }
 
 #game_controls input {
+    font-family: inherit;
+    font-size: inherit;
     padding: 0.2em;
-    height: 100%;
 }
 
 #game_controls input[type=number] {
@@ -100,8 +106,6 @@ body {
     background-color: #eee;
 
     text-align: right;
-    font-family: "Courier New", "Liberation Mono", monospace;
-    font-size: inherit;
 }
 
 #game_controls input[type=number]:focus {
@@ -123,7 +127,4 @@ body {
 
     border: 1px solid #333;
     background-color: rgb(255, 102, 0);
-
-    font-family: "Courier New", "Liberation Mono", monospace;
-    font-size: inherit;
 }
