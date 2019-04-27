@@ -38,12 +38,14 @@ pub enum MaterialLoadError {
     ImageLoadError(ImageLoadError),
     TextureCreationError,
     SetTextureDataError(SetTextureDataError),
+    InvalidExtrasError(serde_json::Error),
 }
 
 #[derive(Debug)]
 pub enum PrimitiveLoadError {
     MaterialLoadError(MaterialLoadError),
     MissingAttribute,
+    InvalidExtrasError(serde_json::Error),
 }
 
 impl<'a, Context> GltfLoader<'a, Context>
@@ -108,12 +110,19 @@ where
             None => None,
         };
 
+        let extras = material
+            .extras()
+            .as_ref()
+            .map(|e| serde_json::from_str(e.get()))
+            .transpose()
+            .map_err(MaterialLoadError::InvalidExtrasError)?;
+
         Ok(Material {
             base_color: from4(pbr.base_color_factor()),
             base_color_texture: texture,
             metal_factor: pbr.metallic_factor(),
             roughness: pbr.roughness_factor(),
-            extras: material.extras().as_ref().cloned(),
+            extras,
         })
     }
 
@@ -122,8 +131,14 @@ where
             .primitives()
             .map(|ref p| self.load_primitive(p))
             .collect();
+        let extras = mesh
+            .extras()
+            .as_ref()
+            .map(|e| serde_json::from_str(e.get()))
+            .transpose()
+            .map_err(PrimitiveLoadError::InvalidExtrasError)?;
         let mut new_mesh = Mesh::new(primitives?);
-        new_mesh.extras = mesh.extras().as_ref().cloned();
+        new_mesh.extras = extras;
         Ok(new_mesh)
     }
 
