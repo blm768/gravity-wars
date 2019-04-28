@@ -50,20 +50,20 @@ impl MissileTrail {
 
     pub fn update<'a>(
         &mut self,
-        other_entities: &mut dyn Iterator<Item = &'a Entity>,
-    ) -> Option<MissileEvent<'a>> {
+        other_entities: &mut dyn Iterator<Item = (usize, &'a Entity)>,
+    ) -> Option<MissileEvent> {
         if self.time_to_live <= 0.0 {
             return None;
         }
 
         if let Some(last_pos) = self.positions().last().cloned() {
             self.time_to_live -= constants::TICK_INTERVAL;
-            for other in other_entities {
+            for (i, other) in other_entities {
                 if let Some(toi) = self.time_to_collision(other, true) {
                     if toi <= constants::TICK_INTERVAL {
                         self.time_to_live = 0.0;
                         self.add_position(last_pos + self.velocity * toi);
-                        return Some(MissileEvent::HitEntity(other));
+                        return Some(MissileEvent::HitEntity(i));
                     }
                 }
                 self.velocity += other.gravity_at(&last_pos);
@@ -79,7 +79,7 @@ impl MissileTrail {
     }
 }
 
-pub enum MissileEvent<'a> {
+pub enum MissileEvent {
     Expired,
-    HitEntity(&'a Entity),
+    HitEntity(usize),
 }

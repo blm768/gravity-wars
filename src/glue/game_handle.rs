@@ -71,18 +71,17 @@ impl GameHandle {
 
     #[wasm_bindgen(js_name = currentPlayer)]
     pub fn current_player(&self) -> Option<u32> {
-        self.game_state.borrow().current_player().map(|p| p as u32)
+        Some(self.game_state.borrow().turn()?.current_player as u32)
     }
 
     #[wasm_bindgen(js_name = currentPlayerColor)]
     pub fn current_player_color(&self) -> Option<Vec<u8>> {
         use rgb::{ComponentMap, ComponentSlice};
         let state = self.game_state.borrow();
-        let color = state.current_player().map(|p| {
-            state.players()[p]
-                .color
-                .map(|c| (c * 255.0).max(0.0).min(255.0) as u8)
-        })?;
+        let current_player = state.turn()?.current_player;
+        let color = state.players()[current_player]
+            .color
+            .map(|c| (c * 255.0).max(0.0).min(255.0) as u8);
         Some(color.as_slice().to_vec())
     }
 

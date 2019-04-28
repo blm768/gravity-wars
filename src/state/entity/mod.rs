@@ -110,4 +110,20 @@ pub trait EntityRenderer: Debug {
 #[derive(Clone, Debug)]
 pub struct Ship {
     pub player_id: usize,
+    pub state: ShipState,
+}
+
+impl Ship {
+    pub fn new(player_id: usize) -> Ship {
+        Ship {
+            player_id,
+            state: ShipState::Active,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ShipState {
+    Active,
+    Disabled,
 }

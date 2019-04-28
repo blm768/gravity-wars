@@ -136,7 +136,7 @@ where
             let mesh_shape = make_collision_shape(self.ship_mesh);
             let shape = mesh_shape.unwrap_or_else(|| Box::new(Ball::new(0.5)));
             let mut ship = self.place_entity(shape)?;
-            ship.ship = Some(Ship { player_id: id });
+            ship.ship = Some(Ship::new(id));
             ship.transform.rotation = UnitQuaternion::from_axis_angle(&Vector3::x_axis(), PI * 0.5);
             ship.renderer = Some(Rc::clone(&renderers[id]));
             self.game_state.entities.push(ship)
