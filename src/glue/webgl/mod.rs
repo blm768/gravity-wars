@@ -1,5 +1,6 @@
 use std::cell::Cell;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use web_sys::WebGlRenderingContext;
 use web_sys::{Element, HtmlCanvasElement};
@@ -20,6 +21,8 @@ pub struct WebGlContext {
     gl_context: Rc<WebGlRenderingContext>,
     shader_bound: Cell<bool>,
 }
+
+static HAS_WARNED_ABOUT_PIXEL_RATIO: AtomicBool = AtomicBool::new(false);
 
 impl WebGlContext {
     pub fn new(
@@ -56,11 +59,29 @@ impl WebGlContext {
         self.gl_context.drawing_buffer_height()
     }
 
+    /**
+     * Returns the device pixel ratio.
+     *
+     * Always returns a finite, positive value.
+     */
+    pub fn device_pixel_ratio(&self) -> f64 {
+        let ratio = web_sys::window().unwrap().device_pixel_ratio();
+        if !ratio.is_finite() || ratio <= 0.0 {
+            if !HAS_WARNED_ABOUT_PIXEL_RATIO.swap(true, Ordering::Relaxed) {
+                log::warn!("Invalid device pixel ratio");
+            }
+            1.0
+        } else {
+            ratio
+        }
+    }
+
     pub fn set_viewport(&self) {
         use std::cmp::max;
 
-        let width = max(self.canvas_element.client_width(), 0) as u32;
-        let height = max(self.canvas_element.client_height(), 0) as u32;
+        let scale = self.device_pixel_ratio();;
+        let width = (max(self.canvas_element.client_width(), 0) as f64 * scale) as u32;
+        let height = (max(self.canvas_element.client_height(), 0) as f64 * scale) as u32;
 
         if self.canvas.width() != width {
             self.canvas.set_width(width);

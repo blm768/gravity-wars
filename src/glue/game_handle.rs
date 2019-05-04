@@ -97,8 +97,9 @@ impl GameHandle {
         let camera = &mut self.game_state.borrow_mut().camera;
         camera.aspect_ratio = self.renderer.context().aspect_ratio();
         let projection = camera.projection();
-        let pan_factor =
-            (projection.top() - projection.bottom()) / self.renderer.context().height() as f32;
+        let canvas_height = self.renderer.context().height() as f32
+            / self.renderer.context().device_pixel_ratio() as f32;
+        let pan_factor = (projection.top() - projection.bottom()) / canvas_height;
         let delta = Vector2::new(x * pan_factor, y * pan_factor);
         self.input_queue
             .borrow_mut()
