@@ -34,7 +34,7 @@ export class GameInterface {
             return;
         }
         this.gameHandle = game;
-        this.connectGameEvents();
+        this.onReady();
     }
 
     onControlsReady() {
@@ -42,12 +42,17 @@ export class GameInterface {
             return;
         }
         this.controls = new GameControls;
-        this.connectGameEvents();
+        this.splash = document.getElementById('splash');
+        this.onReady();
     }
 
-    connectGameEvents() {
+    onReady() {
         if (!(this.gameHandle && this.controls)) {
             return;
+        }
+
+        if (this.splash) {
+            this.splash.style.display = 'none';
         }
 
         this.controls.controlForm.addEventListener('submit', () => { this.sendFireEvent(); });

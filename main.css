@@ -32,6 +32,13 @@ body {
     height: 100%;
 }
 
+#splash {
+    grid-area: map;
+    align-self: center;
+    justify-self: center;
+    z-index: 1;
+}
+
 #game_overlay {
     position: absolute;
     left: 1em;
