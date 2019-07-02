@@ -82,10 +82,9 @@ impl GameState {
         self.players = players;
     }
 
-    fn active_players<'a>(
-        entities: &'a mut dyn Iterator<Item = &'a Entity>,
-    ) -> impl Iterator<Item = usize> + 'a {
-        entities
+    pub fn active_players(&self) -> impl Iterator<Item = usize> + '_ {
+        self.entities
+            .iter()
             .filter_map(|e| e.ship.as_ref())
             .filter(|s| s.state == ShipState::Active)
             .map(|s| s.player_id)
@@ -97,10 +96,9 @@ impl GameState {
 
     pub fn start_game(&mut self) {
         let turn = Turn::new(0);
-        self.phase = turn.skip_eliminated_players(
-            self.players.len(),
-            &mut Self::active_players(&mut self.entities.iter()),
-        );
+        let next_phase =
+            turn.skip_eliminated_players(self.players.len(), &mut self.active_players());
+        self.phase = next_phase;
     }
 
     pub fn handle_input(&mut self, event: &InputEvent) -> Result<(), InputEventError> {
@@ -196,10 +194,8 @@ impl GameState {
             self.handle_missile_event(event);
         }
         if !events.is_empty() {
-            self.phase = turn.next_player(
-                self.players.len(),
-                &mut Self::active_players(&mut self.entities.iter()),
-            );
+            let next_phase = turn.next_player(self.players.len(), &mut self.active_players());
+            self.phase = next_phase;
         }
     }
 
