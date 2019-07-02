@@ -60,10 +60,15 @@ impl Turn {
             return GamePhase::GameOver;
         }
 
+        let mut num_active = 0;
         let skip = remaining_players
             .filter(|p| *p < num_players) // Sanity check
+            .inspect(|_| num_active += 1)
             .map(|p| (p + num_players - self.current_player) % num_players) // Number of steps to this player
             .min();
+        if num_active <= 1 {
+            return GamePhase::GameOver;
+        }
         match skip {
             Some(skip) => {
                 let mut next_turn = *self;
