@@ -1,10 +1,10 @@
-import init, * as gravityWars from './gravity_wars.js';
+import init, * as gravityWars from "./gravity_wars.js";
 
 var gameState;
 var gameInterface;
 
 async function start() {
-    await init('./gravity_wars_bg.wasm');
+    await init("./gravity_wars_bg.wasm");
     gameInterface = gravityWars.initInterface();
     gravityWars.loadAssets().then((assets) => {
         try {

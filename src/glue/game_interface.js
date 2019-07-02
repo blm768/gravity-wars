@@ -6,7 +6,7 @@ const DEFAULT_PLAYER_COLOR = [255, 255, 255];
 
 class GameControls {
     constructor() {
-        let controlForm = document.getElementById('game_controls');
+        let controlForm = document.getElementById("game_controls");
         this.controlForm = controlForm;
         this.angleInput = controlForm.elements.namedItem("angle");
         this.powerInput = controlForm.elements.namedItem("power");
@@ -24,7 +24,7 @@ class GameControls {
 export class GameInterface {
     constructor() {
         if (document.readyState == "loading") {
-            document.addEventListener('DOMContentLoaded', () => this.onControlsReady());
+            document.addEventListener("DOMContentLoaded", () => this.onControlsReady());
         } else {
             this.onControlsReady();
         }
@@ -51,15 +51,15 @@ export class GameInterface {
             return;
         }
 
-        this.controls.controlForm.addEventListener('submit', () => { this.sendFireEvent(); });
+        this.cntrols.controlForm.addEventListener("submit", () => { this.sendFireEvent(); });
 
         let canvas = this.gameHandle.canvas();
-        canvas.addEventListener('mousemove', (event) => {
+        canvas.addEventListener("mousemove", (event) => {
             if (!(event.buttons & PRIMARY_BUTTON)) return;
             // TODO: handle touch events?
             this.gameHandle.onPan(-event.movementX, event.movementY);
         });
-        canvas.addEventListener('wheel', (event) => {
+        canvas.addEventListener("wheel", (event) => {
             this.gameHandle.onZoom(event.deltaY * CAMERA_ZOOM_RATE);
         });
         this.gameHandle.onInterfaceReady(this);
@@ -82,7 +82,7 @@ export class GameInterface {
             playerIndicator.textContent = "Player " + (currentPlayer + 1);
             var color = this.gameHandle.currentPlayerColor();
             if (color === undefined) {
-                console.warn('Invalid player color');
+                console.warn("Invalid player color");
                 color = DEFAULT_PLAYER_COLOR;
             }
             playerIndicator.style.setProperty("--player-color", "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")");
