@@ -214,7 +214,9 @@ fn try_start_game(assets: &AssetData) -> Result<GameHandle, String> {
         }
         update_state.borrow_mut().update_missiles();
         if let Some(ref interface) = *update_interface.borrow() {
-            interface.update_ui();
+            if let Err(err) = interface.update_ui() {
+                log::error!("UI update error: {:?}", err);
+            }
         }
     };
 

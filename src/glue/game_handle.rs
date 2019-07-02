@@ -129,8 +129,8 @@ extern "C" {
     #[wasm_bindgen(constructor)]
     pub fn new() -> GameInterface;
 
-    #[wasm_bindgen(method, js_name = "updateUI")]
-    pub fn update_ui(interface: &GameInterface);
+    #[wasm_bindgen(method, catch, js_name = "updateUI")]
+    pub fn update_ui(interface: &GameInterface) -> Result<(), JsValue>;
 }
 
 #[wasm_bindgen(js_name = "initInterface")]
