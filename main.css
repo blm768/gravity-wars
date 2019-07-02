@@ -83,6 +83,10 @@ body {
     padding-right: 0.5em;
 }
 
+#game_controls label#current_player:empty {
+    display: none;
+}
+
 #game_controls label#current_player:before {
     background-color: var(--player-color);
     content: "";

@@ -2,6 +2,7 @@
 const CAMERA_ZOOM_RATE = 0.1;
 // The event code for the primary (usually left) mouse button
 const PRIMARY_BUTTON = 1;
+const DEFAULT_PLAYER_COLOR = [255, 255, 255];
 
 class GameControls {
     constructor() {
@@ -73,13 +74,18 @@ export class GameInterface {
 
     updateUI() {
         this.controls.enable(this.gameHandle.isAiming());
-        var currentPlayer = this.gameHandle.currentPlayer();
-        if (currentPlayer !== undefined) {
-            this.controls.playerIndicator.textContent = "Player " + (currentPlayer + 1);
-        }
-        var color = this.gameHandle.currentPlayerColor();
-        if (color !== undefined) {
-            this.controls.playerIndicator.style.setProperty("--player-color", "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")");
+        let playerIndicator = this.controls.playerIndicator;
+        let currentPlayer = this.gameHandle.currentPlayer();
+        if (currentPlayer === undefined) {
+            playerIndicator.textContent = "";
+        } else {
+            playerIndicator.textContent = "Player " + (currentPlayer + 1);
+            var color = this.gameHandle.currentPlayerColor();
+            if (color === undefined) {
+                console.warn('Invalid player color');
+                color = DEFAULT_PLAYER_COLOR;
+            }
+            playerIndicator.style.setProperty("--player-color", "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")");
         }
     }
 }
