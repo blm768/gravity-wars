@@ -4,7 +4,7 @@ use std::rc::Rc;
 use log::warn;
 use nalgebra::{Isometry, Point2, Translation, UnitComplex, UnitQuaternion, Vector2, Vector3};
 use ncollide2d::shape::{Ball, Polyline, Shape};
-use rand::distributions::{Distribution, Normal};
+use rand_distr::{Distribution, Normal};
 use rand::{self, Rng};
 
 use crate::meshgen;
@@ -97,14 +97,14 @@ where
         let planet_renderer = Rc::new(MeshRenderer::new(renderer, planet_mesh));
 
         let num_planets = {
-            let distribution = Normal::new(PLANET_FREQ_MEAN, PLANET_FREQ_STD_DEV);
+            let distribution = Normal::new(PLANET_FREQ_MEAN, PLANET_FREQ_STD_DEV).unwrap();
             let density = distribution.sample(&mut rand::thread_rng()) as f32;
             let count = (density * self.width * self.height).round() as usize;
             count.max(1)
         };
 
-        let radius_distribution = Normal::new(PLANET_RAD_MEAN, PLANET_RAD_STD_DEV);
-        let density_distribution = Normal::new(PLANET_DENS_MEAN, PLANET_DENS_STD_DEV);
+        let radius_distribution = Normal::new(PLANET_RAD_MEAN, PLANET_RAD_STD_DEV).unwrap();
+        let density_distribution = Normal::new(PLANET_DENS_MEAN, PLANET_DENS_STD_DEV).unwrap();
         for _ in 0..num_planets {
             let radius = radius_distribution
                 .sample(&mut rand::thread_rng())
