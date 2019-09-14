@@ -11,7 +11,7 @@ case "$1" in
     ;;
 esac
 
-cargo +nightly build "${cargo_opts[@]}"
+cargo build "${cargo_opts[@]}"
 
 wasm-bindgen \
     "target/wasm32-unknown-unknown/${target_dir}/gravity_wars.wasm" \
