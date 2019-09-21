@@ -11,6 +11,7 @@
         "target": true,
     },
     "[javascript]": {
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.tabSize": 4
     }
 }
