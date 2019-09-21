@@ -79,7 +79,7 @@ impl WebGlContext {
     pub fn set_viewport(&self) {
         use std::cmp::max;
 
-        let scale = self.device_pixel_ratio();;
+        let scale = self.device_pixel_ratio();
         let width = (max(self.canvas_element.client_width(), 0) as f64 * scale) as u32;
         let height = (max(self.canvas_element.client_height(), 0) as f64 * scale) as u32;
 
