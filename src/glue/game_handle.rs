@@ -9,7 +9,7 @@ use web_sys::HtmlCanvasElement;
 use crate::glue::callback::Callback;
 use crate::glue::webgl::game_renderer::WebGlRenderer;
 use crate::state::event::{InputEvent, MissileParams};
-use crate::state::{GameState, Turn, TurnState};
+use crate::state::{GamePhase, GameState, Turn, TurnState};
 
 /// Main interface between JavaScript and Rust
 ///
@@ -83,6 +83,22 @@ impl GameHandle {
             .color
             .map(|c| (c * 255.0).max(0.0).min(255.0) as u8);
         Some(color.as_slice().to_vec())
+    }
+
+    fn game_over_text(state: &GameState) -> String {
+        match state.active_players().next() {
+            Some(player) => format!("Player {} wins!", player + 1),
+            None => String::from("Game Over"),
+        }
+    }
+
+    #[wasm_bindgen(js_name = overlayText)]
+    pub fn overlay_text(&self) -> String {
+        let state = self.game_state.borrow();
+        match state.phase() {
+            GamePhase::GameOver => Self::game_over_text(&state),
+            _ => String::new(),
+        }
     }
 
     /// Called by the JavaScript glue code when the game interface has been initialized

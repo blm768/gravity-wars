@@ -90,6 +90,10 @@ impl GameState {
             .map(|s| s.player_id)
     }
 
+    pub fn phase(&self) -> &GamePhase {
+        &self.phase
+    }
+
     pub fn turn(&self) -> Option<&Turn> {
         self.phase.turn()
     }
@@ -166,9 +170,7 @@ impl GameState {
     pub fn update_missiles(&mut self) {
         let turn = match self.phase {
             GamePhase::Playing(turn) => turn,
-            _ => {
-                return;
-            }
+            _ => return,
         };
 
         let mut events = Vec::new();
@@ -186,7 +188,6 @@ impl GameState {
                 }
                 if let Some(event) = event {
                     events.push(event);
-
                 }
             }
         }
