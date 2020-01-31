@@ -6,7 +6,6 @@ use std::fmt::Display;
 use std::mem;
 use std::rc::Rc;
 
-use futures::Future;
 use js_sys::{ArrayBuffer, Function, Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -106,11 +105,12 @@ impl AssetLoaderData {
     fn load(loader: &Rc<RefCell<AssetLoaderData>>, uri: &str) {
         let saved_uri: Box<str> = uri.into();
         let saved_loader = Rc::clone(&loader);
-        let future = do_fetch(uri).then(move |result| {
+        let future = async move {
+            let result = do_fetch(&saved_uri).await;
             let mut borrowed = saved_loader.borrow_mut();
             borrowed.process_response(&saved_uri, result);
             Ok(JsValue::null())
-        });
+        };
         let mut borrowed = loader.borrow_mut();
         borrowed
             .pending
@@ -178,30 +178,25 @@ fn to_other_error(error: JsValue) -> FetchError {
     FetchError::new(FetchErrorType::Other, error_to_message(error))
 }
 
-fn do_fetch(uri: &str) -> impl Future<Item = Vec<u8>, Error = FetchError> {
+async fn do_fetch(uri: &str) -> Result<Vec<u8>, FetchError> {
     let promise = web_sys::window().unwrap().fetch_with_str(uri);
-    JsFuture::from(promise)
-        .map_err(|e| FetchError::new(FetchErrorType::NetworkError, error_to_message(e)))
-        .and_then(move |response| {
-            let response = response.dyn_into::<Response>().map_err(to_other_error)?;
-            if response.ok() {
-                Ok(response.array_buffer().map_err(to_other_error)?)
-            } else {
-                Err(FetchError::from_http_status(response.status()))
-            }
-        })
-        .and_then(|promise| {
-            JsFuture::from(promise)
-                .map_err(|e| FetchError::new(FetchErrorType::Interrupted, error_to_message(e)))
-        })
-        .and_then(|obj| {
-            let array = obj
-                .dyn_into::<ArrayBuffer>()
-                .map_err(to_other_error)
-                .map(|buf| Uint8Array::new(&buf))?;
-            let mut data = Vec::new();
-            data.resize(array.length() as usize, 0);
-            array.copy_to(&mut data[..]);
-            Ok(data)
-        })
+    let response = JsFuture::from(promise)
+        .await
+        .map_err(|e| FetchError::new(FetchErrorType::NetworkError, error_to_message(e)))?;
+    let response = response.dyn_into::<Response>().map_err(to_other_error)?;
+    if !response.ok() {
+        return Err(FetchError::from_http_status(response.status()));
+    }
+    let buffer_promise = response.array_buffer().map_err(to_other_error)?;
+    let buffer = JsFuture::from(buffer_promise)
+        .await
+        .map_err(|e| FetchError::new(FetchErrorType::Interrupted, error_to_message(e)))?;
+    let array = buffer
+        .dyn_into::<ArrayBuffer>()
+        .map_err(to_other_error)
+        .map(|buf| Uint8Array::new(&buf))?;
+    let mut data = Vec::new();
+    data.resize(array.length() as usize, 0);
+    array.copy_to(&mut data[..]);
+    Ok(data)
 }

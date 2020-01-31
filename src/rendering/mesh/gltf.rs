@@ -66,7 +66,7 @@ where
         }
 
         let buffer = self.context.make_attribute_buffer()?; // TODO: share these between attributes.
-        let view = accessor.view();
+        let view = accessor.view().ok_or(())?; // TODO: support sparse accessors (should create our own all-zero buffer).
         let src_buf = view.buffer();
 
         self.load_buffer(&buffer, &src_buf);
@@ -197,7 +197,7 @@ where
 
     fn load_indices(&mut self, accessor: &Accessor) -> Result<ElementIndices<Context>, ()> {
         let buffer = self.context.make_index_buffer()?;
-        let view = accessor.view();
+        let view = accessor.view().ok_or(())?; // TODO: support sparse accessors (should create our own all-zero buffer).
         self.load_buffer(&buffer, &view.buffer());
         let attr_type: AttributeType = accessor.data_type().into();
         Ok(ElementIndices::new(
