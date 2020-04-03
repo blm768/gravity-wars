@@ -21,7 +21,7 @@ opt-level = 2
 [dependencies]
 console_error_panic_hook = "^0.1"
 console_log = "^0.1"
-image = "^0.21" # TODO: update to 0.22 once gltf supports it.
+image = "^0.23" # TODO: update to 0.22 once gltf supports it.
 js-sys = "^0.3"
 log = "^0.4"
 nalgebra = "^0.20"
