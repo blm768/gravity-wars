@@ -86,7 +86,7 @@ dependencies = [
 
 [[package]]
 name = "console_log"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -225,7 +225,7 @@ name = "gravity-wars"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "console_log 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "console_log 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gltf 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.21.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "js-sys 0.3.36 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -862,7 +862,7 @@ dependencies = [
 "checksum cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)" = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 "checksum color_quant 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0dbbb57365263e881e805dc77d94697c9118fd94d8da011240555aa7b23445bd"
 "checksum console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "b8d976903543e0c48546a91908f21588a680a8c8f984df9a5d69feccb2b2a211"
-"checksum console_log 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1e7871d2947441b0fdd8e2bd1ce2a2f75304f896582c0d572162d48290683c48"
+"checksum console_log 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "501a375961cef1a0d44767200e66e4a559283097e91d0730b1d75dfb2f8a1494"
 "checksum crossbeam-deque 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c3aa945d63861bfe624b55d153a39684da1e8c0bc8fba932f7ee3a3c16cea3ca"
 "checksum crossbeam-epoch 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5064ebdbf05ce3cb95e45c8b086f72263f4166b29b97f6baff7ef7fe047b55ac"
 "checksum crossbeam-queue 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c695eeca1e7173472a32221542ae469b3e9aac3a4fc81f7696bcad82029493db"
