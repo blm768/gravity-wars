@@ -230,7 +230,7 @@ dependencies = [
  "js-sys 0.3.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide2d 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide2d 0.23.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-complex 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_distr 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -380,7 +380,7 @@ dependencies = [
 
 [[package]]
 name = "ncollide2d"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "approx 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -833,7 +833,7 @@ dependencies = [
 "checksum memoffset 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "75189eb85871ea5c2e2c15abbdd541185f63b408415e5051f5cac122d8c774b9"
 "checksum miniz_oxide 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "aa679ff6578b1cddee93d7e82e263b94a575e0bfced07284eb0c037c1d2416a5"
 "checksum nalgebra 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d630f146ae751cfb43db9e0ad6bd73819a546a38baa5d4a9de69823c389c78a1"
-"checksum ncollide2d 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bd8b64a7e59efbd70322f6c560845d86d7c3cb5c396c14e5f58f8c84ad49e78f"
+"checksum ncollide2d 0.23.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e2c74aecceb5340504b2ea61f6f64f9f10a191add2df366d25534fd7a4b6e02f"
 "checksum num-complex 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
 "checksum num-integer 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "3f6ea62e9d81a77cd3ee9a2a5b9b609447857f3d358704331e4ef39eb247fcba"
 "checksum num-iter 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "dfb0800a0291891dd9f4fe7bd9c19384f98f7fbe0cd0f39a2c6b88b9868bbc00"
