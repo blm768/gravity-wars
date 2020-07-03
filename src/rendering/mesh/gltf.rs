@@ -250,14 +250,14 @@ fn from4(c: [f32; 4]) -> Rgba {
 fn image_format_from_mime(mime_type: &str) -> Option<ImageFormat> {
     // TODO: support proper MIME type handling?
     match mime_type {
-        "image/png" => Some(ImageFormat::PNG),
-        "image/jpeg" => Some(ImageFormat::JPEG),
-        "image/gif" => Some(ImageFormat::GIF),
-        "image/webp" => Some(ImageFormat::WEBP),
-        "image/tiff" => Some(ImageFormat::TIFF),
-        "image/tga" | "image/x-tga" => Some(ImageFormat::TGA),
-        "image/bmp" => Some(ImageFormat::BMP),
-        "image/x-icon" | "image/vnd.microsoft.icon" => Some(ImageFormat::ICO),
+        "image/png" => Some(ImageFormat::Png),
+        "image/jpeg" => Some(ImageFormat::Jpeg),
+        "image/gif" => Some(ImageFormat::Gif),
+        "image/webp" => Some(ImageFormat::WebP),
+        "image/tiff" => Some(ImageFormat::Tiff),
+        "image/tga" | "image/x-tga" => Some(ImageFormat::Tga),
+        "image/bmp" => Some(ImageFormat::Bmp),
+        "image/x-icon" | "image/vnd.microsoft.icon" => Some(ImageFormat::Ico),
         _ => None,
     }
 }
