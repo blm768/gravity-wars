@@ -231,7 +231,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.21.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ncollide2d 0.23.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "num-complex 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-complex 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_distr 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rgb 0.8.18 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -394,14 +394,6 @@ version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "autocfg 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "num-traits 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "num-complex"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
  "num-traits 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -844,7 +836,6 @@ dependencies = [
 "checksum nalgebra 0.21.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d6b6147c3d50b4f3cdabfe2ecc94a0191fd3d6ad58aefd9664cf396285883486"
 "checksum ncollide2d 0.23.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f8ac5be202a88b303e05a289a86783fa618eb3d7730dda35641fd0db6693d0dc"
 "checksum num-complex 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
-"checksum num-complex 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b05ad05bd8977050b171b3f6b48175fea6e0565b7981059b486075e1026a9fb5"
 "checksum num-integer 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "3f6ea62e9d81a77cd3ee9a2a5b9b609447857f3d358704331e4ef39eb247fcba"
 "checksum num-iter 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "dfb0800a0291891dd9f4fe7bd9c19384f98f7fbe0cd0f39a2c6b88b9868bbc00"
 "checksum num-rational 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "da4dc79f9e6c81bef96148c8f6b8e72ad4541caa4a24373e900a36da07de03a3"
