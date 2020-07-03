@@ -4,8 +4,8 @@ use std::rc::Rc;
 use log::warn;
 use nalgebra::{Isometry, Point2, Translation, UnitComplex, UnitQuaternion, Vector2, Vector3};
 use ncollide2d::shape::{Ball, Polyline, Shape};
-use rand_distr::{Distribution, Normal};
 use rand::{self, Rng};
+use rand_distr::{Distribution, Normal};
 
 use crate::meshgen;
 use crate::rendering::context::RenderingContext;
