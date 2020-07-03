@@ -66,10 +66,10 @@ impl Entity {
         false
     }
 
-    pub fn ray_time_to_collision(&self, ray: &Ray<f32>, solid: bool) -> Option<f32> {
+    pub fn ray_time_to_collision(&self, ray: &Ray<f32>, max_time: f32, solid: bool) -> Option<f32> {
         let shape = self.collision_shape.as_ref()?;
         let transform = self.collision_transform();
-        shape.toi_with_ray(&transform, &ray, solid)
+        shape.toi_with_ray(&transform, &ray, max_time, solid)
     }
 
     /**

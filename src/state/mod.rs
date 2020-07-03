@@ -144,8 +144,8 @@ impl GameState {
                 let radius = shape.bounding_sphere(&ship.collision_transform()).radius();
                 // Make sure we've gotten past the ship's own collision shape. Convex shapes may have multiple intersections before achieving clearance.
                 while (position - ship.position()).magnitude_squared() < radius * radius {
-                    let ray = Ray::new(position.xy().into(), velocity.xy());
-                    if let Some(collision) = ship.ray_time_to_collision(&ray, false) {
+                    let ray = Ray::new(position.xy().into(), direction.xy());
+                    if let Some(collision) = ship.ray_time_to_collision(&ray, radius, false) {
                         position += velocity * collision + direction * 0.01;
                     } else {
                         break;

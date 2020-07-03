@@ -42,7 +42,7 @@ impl MissileTrail {
         let velocity = self.velocity.xy();
         if velocity.magnitude_squared() > 0.0 {
             let ray = Ray::new(pos.xy().into(), velocity.xy());
-            entity.ray_time_to_collision(&ray, solid)
+            entity.ray_time_to_collision(&ray, constants::TICK_INTERVAL, solid)
         } else {
             None
         }
@@ -60,11 +60,9 @@ impl MissileTrail {
             self.time_to_live -= constants::TICK_INTERVAL;
             for (i, other) in other_entities {
                 if let Some(toi) = self.time_to_collision(other, true) {
-                    if toi <= constants::TICK_INTERVAL {
-                        self.time_to_live = 0.0;
-                        self.add_position(last_pos + self.velocity * toi);
-                        return Some(MissileEvent::HitEntity(i));
-                    }
+                    self.time_to_live = 0.0;
+                    self.add_position(last_pos + self.velocity * toi);
+                    return Some(MissileEvent::HitEntity(i));
                 }
                 self.velocity += other.gravity_at(&last_pos);
             }
