@@ -221,7 +221,7 @@ where
                     .ok_or(ImageLoadError::UnsupportedImageFormat)?;
                 let image = image::load_from_memory_with_format(buf, image_format)
                     .map_err(ImageLoadError::ImageError)?;
-                Ok(image.to_rgb())
+                Ok(image.to_rgb8())
             }
             Source::Uri { .. } => Err(ImageLoadError::BufferLoadError(
                 BufferLoadError::InvalidSource,

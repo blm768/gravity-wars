@@ -1,4 +1,4 @@
-use nalgebra::{Isometry, Orthographic3, Translation, UnitQuaternion, Vector3, U3};
+use nalgebra::{Isometry, Orthographic3, Translation, UnitQuaternion, Vector3};
 
 #[derive(Clone, Debug)]
 pub struct Camera {
@@ -31,7 +31,7 @@ impl Camera {
         Orthographic3::new(-right, right, -scale, scale, -depth, depth)
     }
 
-    pub fn view(&self) -> Isometry<f32, U3, UnitQuaternion<f32>> {
+    pub fn view(&self) -> Isometry<f32, UnitQuaternion<f32>, 3> {
         Isometry::from_parts(Translation::from(self.position), self.rotation).inverse()
     }
 }

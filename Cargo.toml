@@ -24,21 +24,26 @@ console_log = "^0.2"
 image = "^0.23"
 js-sys = "^0.3"
 log = "^0.4"
-nalgebra = "^0.21"
-ncollide2d = "^0.23"
-num-complex = "^0.2"
-rand_distr = "^0.2"
+nalgebra = "~0.30" # Need to lock for ncollide2d
+ncollide2d = "^0.33"
+num-complex = "^0.4"
+rand_distr = "^0.4"
 rgb = "^0.8"
 serde_json = "^1.0"
 wasm-bindgen-futures = "^0.4"
 
+[dependencies.getrandom]
+version = "^0.2"
+features = ["js"]
+
 [dependencies.gltf]
-version = "^0.15"
+version = "^1.0"
 features = ["extras"]
 
 [dependencies.rand]
-version = "^0.7"
-features = ["wasm-bindgen"]
+version = "^0.8"
+default_features = false
+features = ["std_rng"]
 
 [dependencies.wasm-bindgen]
 version = "^0.2"

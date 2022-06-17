@@ -160,8 +160,8 @@ where
         let mut rng = rand::thread_rng();
 
         for _ in 0..MAX_PLACE_ENTITY_TRIES {
-            let x = rng.gen_range(-half_width, half_width);
-            let y = rng.gen_range(-half_height, half_height);
+            let x = rng.gen_range(-half_width..=half_width);
+            let y = rng.gen_range(-half_height..=half_height);
             let pos = Vector2::new(x, y);
             let transform = Isometry::from_parts(Translation::from(pos), UnitComplex::identity());
             if self

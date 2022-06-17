@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use nalgebra::base::dimension::{U2, U3};
 use nalgebra::{Isometry, Similarity, Translation, UnitComplex, UnitQuaternion, Vector3};
 use ncollide2d::query::{Proximity, Ray, RayCast};
 use ncollide2d::shape::Shape;
@@ -47,7 +46,7 @@ impl Entity {
     pub fn collides_with_shape(
         &self,
         other_shape: &dyn Shape<f32>,
-        other_transform: &Isometry<f32, U2, UnitComplex<f32>>,
+        other_transform: &Isometry<f32, UnitComplex<f32>, 2>,
     ) -> bool {
         use ncollide2d::query;
         if let Some(shape) = &self.collision_shape {
@@ -75,7 +74,7 @@ impl Entity {
     /**
      * Makes a rough mapping from the 3D transform to a 2D transform for collision detection.
      */
-    pub fn collision_transform(&self) -> Isometry<f32, U2, UnitComplex<f32>> {
+    pub fn collision_transform(&self) -> Isometry<f32, UnitComplex<f32>, 2> {
         let rotated = self.transform.rotation * Vector3::new(1.0, 0.0, 0.0);
         let flat_rotation = UnitComplex::from_complex(Complex::new(rotated.x, rotated.y));
         Isometry::from_parts(Translation::from(self.position().xy()), flat_rotation)
@@ -98,7 +97,7 @@ impl EntityTransform {
         }
     }
 
-    pub fn to_similarity(&self) -> Similarity<f32, U3, UnitQuaternion<f32>> {
+    pub fn to_similarity(&self) -> Similarity<f32, UnitQuaternion<f32>, 3> {
         Similarity::from_parts(Translation::from(self.position), self.rotation, self.scale)
     }
 }
