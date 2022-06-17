@@ -146,7 +146,7 @@ impl GameState {
                 while (position - ship.position()).magnitude_squared() < radius * radius {
                     let ray = Ray::new(position.xy().into(), direction.xy());
                     if let Some(collision) = ship.ray_time_to_collision(&ray, radius, false) {
-                        position += velocity * collision + direction * 0.01;
+                        position += direction * (collision + 0.01);
                     } else {
                         break;
                     }
